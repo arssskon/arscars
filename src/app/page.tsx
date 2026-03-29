@@ -170,7 +170,7 @@ export default function HomePage() {
                 <p className="text-xl text-white/80 mb-8">Зарегистрируйтесь и получите 500 бонусных рублей</p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link href="/register"><Button size="lg" className="h-14 px-8 text-lg bg-white text-primary hover:bg-white/90"><CreditCard className="mr-2 h-5 w-5" />Создать аккаунт</Button></Link>
-                  <Link href="/search"><Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white/30 text-white hover:bg-white/10">Смотреть авто</Button></Link>
+                  <Link href="/search"><Button size="lg" variant="outline" className="h-14 px-8 text-lg border-white bg-white/10 text-white hover:bg-white/20">Смотреть авто</Button></Link>
                 </div>
               </div>
             </CardContent>

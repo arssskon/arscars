@@ -62,7 +62,16 @@ export function VehicleCard({ vehicle, distance, onSelect, selected, compact }: 
                   )}
                 </div>
               </div>
-              <div className="text-primary font-bold text-sm">{price.toFixed(0)} ₽/мин</div>
+              <div className="flex items-center justify-between">
+                <div className="text-primary font-bold text-sm">{price.toFixed(0)} ₽/мин</div>
+                <Link
+                  href={`/vehicles/${vehicle.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
+                  Подробнее →
+                </Link>
+              </div>
             </div>
           </div>
         </CardContent>
