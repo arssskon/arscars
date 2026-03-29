@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
-import { ArrowLeft, Shield, ShieldOff, Save, Pencil, X } from "lucide-react";
+import { ArrowLeft, Shield, ShieldOff, Save, Pencil, X, FileText, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/components/admin/Toast";
 
 interface Trip {
@@ -44,6 +44,19 @@ interface DriverProfile {
   licenseNumber?: string;
 }
 
+interface DriverDocument {
+  id: string;
+  docType: string;
+  docSeries?: string;
+  docNumber?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  fileUrl?: string;
+  status: string;
+  note?: string;
+  createdAt: string;
+}
+
 interface UserDetail {
   id: string;
   fullName: string;
@@ -54,6 +67,7 @@ interface UserDetail {
   roles: string[];
   createdAt: string;
   driverProfile?: DriverProfile;
+  driverDocuments?: DriverDocument[];
   trips?: Trip[];
   reservations?: Reservation[];
   reportedIncidents?: Incident[];
@@ -66,7 +80,19 @@ const ROLE_LABELS: Record<string, string> = {
   driver: "Водитель",
 };
 
-type Tab = "profile" | "trips" | "reservations" | "incidents";
+type Tab = "profile" | "documents" | "trips" | "reservations" | "incidents";
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  passport: "Паспорт РФ",
+  driver_license: "Водительское удостоверение",
+};
+
+const DOC_STATUS_LABELS: Record<string, { label: string; className: string }> = {
+  draft:    { label: "Не загружен", className: "bg-slate-100 text-slate-600" },
+  pending:  { label: "На проверке", className: "bg-yellow-100 text-yellow-700" },
+  approved: { label: "Подтверждён", className: "bg-green-100 text-green-700" },
+  rejected: { label: "Отклонён",    className: "bg-red-100 text-red-700" },
+};
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString("ru-RU", {
@@ -104,6 +130,11 @@ export default function UserDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ fullName: "", email: "", phone: "", address: "" });
   const [editLoading, setEditLoading] = useState(false);
+
+  // Document actions
+  const [docActionLoading, setDocActionLoading] = useState<string | null>(null);
+  const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const fetchUser = async () => {
     setLoading(true);
@@ -186,6 +217,28 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleDocAction = async (docId: string, action: "approve" | "reject") => {
+    setDocActionLoading(docId);
+    try {
+      const note = rejectNote[docId] || undefined;
+      const res = await fetch(`/api/admin/documents/${docId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, note }),
+      });
+      if (!res.ok) throw new Error();
+      await fetchUser();
+      setRejectingId(null);
+      setRejectNote((p) => { const n = { ...p }; delete n[docId]; return n; });
+      success(action === "approve" ? "Документ подтверждён" : "Документ отклонён");
+    } catch {
+      toastError("Ошибка при обработке документа");
+    } finally {
+      setDocActionLoading(null);
+    }
+  };
+
   const toggleRole = (role: string) => {
     setSelectedRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
@@ -215,6 +268,7 @@ export default function UserDetailPage() {
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: "profile", label: "Профиль" },
+    { id: "documents", label: "Документы", count: user.driverDocuments?.length },
     { id: "trips", label: "Поездки", count: user.trips?.length },
     { id: "reservations", label: "Бронирования", count: user.reservations?.length },
     { id: "incidents", label: "Инциденты", count: user.reportedIncidents?.length },
@@ -420,6 +474,128 @@ export default function UserDetailPage() {
                 )}
               </CardContent>
             </Card>
+          )}
+        </div>
+      )}
+
+      {/* Documents tab */}
+      {tab === "documents" && (
+        <div className="space-y-4">
+          {!user.driverDocuments || user.driverDocuments.length === 0 ? (
+            <Card className="shadow-sm">
+              <CardContent className="py-12 text-center text-slate-400">
+                <FileText className="h-8 w-8 mx-auto mb-3 opacity-40" />
+                Документы не загружены
+              </CardContent>
+            </Card>
+          ) : (
+            user.driverDocuments.map((doc) => {
+              const statusInfo = DOC_STATUS_LABELS[doc.status] ?? DOC_STATUS_LABELS.draft;
+              const isRejecting = rejectingId === doc.id;
+              const isLoading = docActionLoading === doc.id;
+              return (
+                <Card key={doc.id} className="shadow-sm">
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-lg bg-violet-100 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-violet-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">
+                          {DOC_TYPE_LABELS[doc.docType] ?? doc.docType}
+                        </CardTitle>
+                        <p className="text-xs text-slate-400 mt-0.5">{formatDate(doc.createdAt)}</p>
+                      </div>
+                    </div>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.className}`}>
+                      {statusInfo.label}
+                    </span>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      {doc.docSeries && (
+                        <div><p className="text-xs text-slate-400 mb-0.5">Серия</p><p className="font-medium">{doc.docSeries}</p></div>
+                      )}
+                      {doc.docNumber && (
+                        <div><p className="text-xs text-slate-400 mb-0.5">Номер</p><p className="font-medium">{doc.docNumber}</p></div>
+                      )}
+                      {doc.issueDate && (
+                        <div><p className="text-xs text-slate-400 mb-0.5">Дата выдачи</p><p className="font-medium">{new Date(doc.issueDate).toLocaleDateString("ru-RU")}</p></div>
+                      )}
+                      {doc.expiryDate && (
+                        <div><p className="text-xs text-slate-400 mb-0.5">Срок действия</p><p className="font-medium">{new Date(doc.expiryDate).toLocaleDateString("ru-RU")}</p></div>
+                      )}
+                    </div>
+                    {doc.fileUrl && (
+                      <div className="flex items-center gap-2 p-2 rounded bg-slate-50 border text-sm">
+                        <FileText className="h-4 w-4 text-slate-400" />
+                        <span className="text-slate-600">{doc.fileUrl}</span>
+                      </div>
+                    )}
+                    {doc.note && (
+                      <div className="p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700">
+                        <strong>Причина:</strong> {doc.note}
+                      </div>
+                    )}
+                    {doc.status === "pending" && (
+                      <div className="flex flex-col gap-2 pt-1">
+                        {isRejecting ? (
+                          <div className="space-y-2">
+                            <textarea
+                              placeholder="Причина отклонения (необязательно)"
+                              value={rejectNote[doc.id] || ""}
+                              onChange={(e) => setRejectNote((p) => ({ ...p, [doc.id]: e.target.value }))}
+                              rows={2}
+                              className="w-full text-sm border border-slate-200 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={isLoading}
+                                onClick={() => handleDocAction(doc.id, "reject")}
+                                className="gap-1.5"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                                {isLoading ? "Отклонение..." : "Подтвердить отклонение"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setRejectingId(null)}
+                              >
+                                Отмена
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              disabled={isLoading}
+                              onClick={() => handleDocAction(doc.id, "approve")}
+                              className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              {isLoading ? "..." : "Подтвердить"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setRejectingId(doc.id)}
+                              className="text-red-600 border-red-200 hover:bg-red-50 gap-1.5"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                              Отклонить
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       )}
