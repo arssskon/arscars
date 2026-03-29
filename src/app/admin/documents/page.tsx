@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, CheckCircle, XCircle, Clock, User } from "lucide-react";
+import { FileText, CheckCircle, XCircle, Clock, User, Trash2 } from "lucide-react";
 import { useToast } from "@/components/admin/Toast";
 
 interface DocWithUser {
@@ -41,6 +41,7 @@ export default function AdminDocumentsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState<Record<string, string>>({});
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const fetchDocs = async () => {
     setLoading(true);
@@ -73,6 +74,24 @@ export default function AdminDocumentsPage() {
       success(action === "approve" ? "Документ подтверждён" : "Документ отклонён");
     } catch {
       toastError("Ошибка при обработке документа");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (docId: string) => {
+    setActionLoading(docId);
+    try {
+      const res = await fetch(`/api/admin/documents/${docId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error();
+      setDeleteConfirmId(null);
+      await fetchDocs();
+      success("Документ удалён");
+    } catch {
+      toastError("Ошибка удаления документа");
     } finally {
       setActionLoading(null);
     }
@@ -252,6 +271,39 @@ export default function AdminDocumentsPage() {
                             Отклонить
                           </Button>
                         </div>
+                      )}
+                    </div>
+                  )}
+                  {doc.status !== "pending" && (
+                    <div className="pt-1">
+                      {deleteConfirmId === doc.id ? (
+                        <div className="flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
+                          <p className="text-sm text-red-700 flex-1">Удалить документ? Это действие необратимо.</p>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={isLoading}
+                            onClick={() => handleDelete(doc.id)}
+                            className="gap-1.5 shrink-0"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            {isLoading ? "Удаление..." : "Удалить"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setDeleteConfirmId(null)} className="shrink-0">
+                            Отмена
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={isLoading}
+                          onClick={() => setDeleteConfirmId(doc.id)}
+                          className="text-slate-400 hover:text-red-600 hover:bg-red-50 gap-1.5"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Удалить
+                        </Button>
                       )}
                     </div>
                   )}
