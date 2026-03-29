@@ -192,10 +192,25 @@ export default function DocumentsPage() {
                     ) : (
                       <div className="space-y-3">
                         {doc.fileUrl && (
-                          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                            <FileText className="h-5 w-5 text-primary" />
-                            <span className="text-sm font-medium">{doc.fileUrl}</span>
-                          </div>
+                          (() => {
+                            const isImage = /\.(jpg|jpeg|png|webp)$/i.test(doc.fileUrl!);
+                            return isImage ? (
+                              <div className="rounded-lg overflow-hidden border">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={doc.fileUrl} alt="Документ" className="w-full max-h-48 object-contain bg-muted/30" />
+                              </div>
+                            ) : (
+                              <a
+                                href={doc.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                              >
+                                <FileText className="h-5 w-5 text-primary" />
+                                <span className="text-sm font-medium underline">Открыть PDF</span>
+                              </a>
+                            );
+                          })()
                         )}
                         {(doc.docSeries || doc.docNumber) && (
                           <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
@@ -248,6 +263,7 @@ interface DocFormProps {
 }
 
 function DocForm({ docType, doc, onSubmit, onCancel, submitting }: DocFormProps) {
+  const { token } = useAuthStore();
   const [form, setForm] = useState({
     docSeries: doc.docSeries || "",
     docNumber: doc.docNumber || "",
@@ -255,36 +271,106 @@ function DocForm({ docType, doc, onSubmit, onCancel, submitting }: DocFormProps)
     expiryDate: doc.expiryDate ? doc.expiryDate.slice(0, 10) : "",
   });
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(form, file?.name || doc.fileUrl || "");
+  const handleFileChange = (f: File) => {
+    setFile(f);
+    setUploadError("");
+    if (f.type.startsWith("image/")) {
+      setPreview(URL.createObjectURL(f));
+    } else {
+      setPreview(null);
+    }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUploadError("");
+
+    let fileUrl = doc.fileUrl || "";
+
+    if (file) {
+      setUploading(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          credentials: "include",
+          headers: authHeaders,
+          body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok) { setUploadError(data.error || "Ошибка загрузки файла"); return; }
+        fileUrl = data.url;
+      } catch {
+        setUploadError("Ошибка загрузки файла");
+        return;
+      } finally {
+        setUploading(false);
+      }
+    }
+
+    onSubmit(form, fileUrl);
+  };
+
+  const isPdf = file?.type === "application/pdf";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="border-2 border-dashed rounded-lg p-4 text-center">
+      <div className="border-2 border-dashed rounded-lg overflow-hidden">
         {file ? (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <FileText className="h-8 w-8 text-primary" />
-              <div className="text-left">
-                <p className="font-medium">{file.name}</p>
-                <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+          <div>
+            {preview ? (
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="Превью документа" className="w-full max-h-48 object-contain bg-muted/30" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setFile(null); setPreview(null); }}
+                  className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
-            <Button type="button" variant="ghost" size="icon" onClick={() => setFile(null)}><X className="h-4 w-4" /></Button>
+            ) : (
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-8 w-8 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium">{file.name}</p>
+                    <p className="text-sm text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} МБ{isPdf ? " · PDF" : ""}</p>
+                  </div>
+                </div>
+                <Button type="button" variant="ghost" size="icon" onClick={() => setFile(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
-          <label className="cursor-pointer block">
-            <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => e.target.files?.[0] && setFile(e.target.files[0])} />
+          <label className="cursor-pointer block p-8 text-center hover:bg-muted/20 transition-colors">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,.pdf"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+            />
             <div className="flex flex-col items-center gap-2">
               <Upload className="h-8 w-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">Нажмите или перетащите файл</p>
+              <p className="text-xs text-muted-foreground/60">JPG, PNG, WebP или PDF · до 10 МБ</p>
             </div>
           </label>
         )}
       </div>
+
+      {uploadError && <p className="text-sm text-red-600">{uploadError}</p>}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -309,8 +395,12 @@ function DocForm({ docType, doc, onSubmit, onCancel, submitting }: DocFormProps)
 
       <div className="flex gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Отмена</Button>
-        <Button type="submit" className="flex-1 lavender-gradient text-white" disabled={submitting || !form.docNumber}>
-          {submitting ? "Загрузка..." : "Отправить на проверку"}
+        <Button
+          type="submit"
+          className="flex-1 lavender-gradient text-white"
+          disabled={submitting || uploading || !form.docNumber}
+        >
+          {uploading ? "Загрузка файла..." : submitting ? "Отправка..." : "Отправить на проверку"}
         </Button>
       </div>
     </form>

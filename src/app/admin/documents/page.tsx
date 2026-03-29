@@ -179,10 +179,25 @@ export default function AdminDocumentsPage() {
                     <div><p className="text-xs text-slate-400 mb-0.5">Загружен</p><p className="font-medium">{new Date(doc.createdAt).toLocaleDateString("ru-RU")}</p></div>
                   </div>
                   {doc.fileUrl && (
-                    <div className="flex items-center gap-2 p-2 rounded bg-slate-50 border text-sm">
-                      <FileText className="h-4 w-4 text-slate-400" />
-                      <span className="text-slate-600">{doc.fileUrl}</span>
-                    </div>
+                    (() => {
+                      const isImage = /\.(jpg|jpeg|png|webp)$/i.test(doc.fileUrl!);
+                      return isImage ? (
+                        <div className="rounded-lg overflow-hidden border border-slate-200">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={doc.fileUrl} alt="Документ" className="w-full max-h-56 object-contain bg-slate-50" />
+                        </div>
+                      ) : (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-2 rounded bg-slate-50 border text-sm hover:bg-slate-100 transition-colors"
+                        >
+                          <FileText className="h-4 w-4 text-slate-400" />
+                          <span className="text-slate-600 underline">Открыть PDF</span>
+                        </a>
+                      );
+                    })()
                   )}
                   {doc.note && (
                     <div className="p-2 rounded bg-red-50 border border-red-200 text-sm text-red-700">
