@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 270 10% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 270 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 10% 15%;
+    --primary: 280 50% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 10% 96%;
+    --secondary-foreground: 270 10% 20%;
+    --muted: 270 10% 96%;
+    --muted-foreground: 270 5% 45%;
+    --accent: 280 45% 90%;
+    --accent-foreground: 280 50% 35%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 10% 90%;
+    --input: 270 10% 90%;
+    --ring: 280 50% 65%;
+    --radius: 0.75rem;
+    --chart-1: 280 50% 65%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+  .dark {
+    --background: 270 15% 8%;
+    --foreground: 270 5% 95%;
+    --card: 270 15% 10%;
+    --card-foreground: 270 5% 95%;
+    --popover: 270 15% 10%;
+    --popover-foreground: 270 5% 95%;
+    --primary: 280 50% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 10% 15%;
+    --secondary-foreground: 270 5% 95%;
+    --muted: 270 10% 15%;
+    --muted-foreground: 270 5% 55%;
+    --accent: 280 30% 20%;
+    --accent-foreground: 280 50% 80%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 270 10% 20%;
+    --input: 270 10% 20%;
+    --ring: 280 50% 65%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; font-feature-settings: "rlig" 1, "calt" 1; }
+}
+
+.lavender-gradient { background: linear-gradient(135deg, #B57EDC 0%, #9B59B6 100%); }
+.glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.8); }
+.vehicle-card { transition: all 0.3s ease; }
+.vehicle-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(181, 126, 220, 0.15); }
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.marker-pulse::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: hsl(var(--primary) / 0.4);
+  border-radius: 50%;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
