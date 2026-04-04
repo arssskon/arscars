@@ -25,12 +25,27 @@ export default function RegisterPage() {
     if (form.password !== form.confirm) { setError("Пароли не совпадают"); return; }
     if (!terms) { setError("Примите условия"); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    const user = { id: "user-new", email: form.email, phone: form.phone || null, fullName: form.fullName, roles: ["driver"] };
-    setUser(user, "mock-token");
-    document.cookie = `auth-token=mock-token; path=/; max-age=${7 * 24 * 60 * 60}`;
-    setLoading(false);
-    router.push("/profile?welcome=true");
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName,
+          email: form.email || undefined,
+          phone: form.phone || undefined,
+          password: form.password,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Ошибка регистрации"); return; }
+      setUser(data.user, data.token);
+      router.push("/profile?welcome=true");
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const ch = (e: React.ChangeEvent<HTMLInputElement>) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
