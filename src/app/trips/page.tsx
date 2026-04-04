@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
@@ -40,7 +40,7 @@ const tripStatusLabels: Record<string, { label: string; color: string }> = {
   canceled: { label: "Отменена",   color: "text-red-500 border-red-200" },
 };
 
-export default function TripsPage() {
+function TripsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const booked = searchParams.get("booked") === "true";
@@ -490,5 +490,13 @@ export default function TripsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function TripsPage() {
+  return (
+    <Suspense fallback={null}>
+      <TripsPageContent />
+    </Suspense>
   );
 }
