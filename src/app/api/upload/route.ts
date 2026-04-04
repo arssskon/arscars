@@ -34,7 +34,11 @@ export async function POST(req: NextRequest) {
   const ext = extname(file.name) || (file.type === "application/pdf" ? ".pdf" : ".jpg");
   const filename = `documents/${randomUUID()}${ext}`;
 
-  const blob = await put(filename, file, { access: "public" });
-
-  return NextResponse.json({ url: blob.url });
+  try {
+    const blob = await put(filename, file, { access: "public" });
+    return NextResponse.json({ url: blob.url });
+  } catch (err) {
+    console.error("Blob upload error:", err);
+    return NextResponse.json({ error: "Ошибка загрузки: " + String(err) }, { status: 500 });
+  }
 }
