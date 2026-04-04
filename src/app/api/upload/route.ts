@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserPayload } from "@/lib/user-guard";
-import { writeFile, mkdir } from "fs/promises";
-import { join, extname } from "path";
+import { put } from "@vercel/blob";
 import { randomUUID } from "crypto";
+import { extname } from "path";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -32,13 +32,9 @@ export async function POST(req: NextRequest) {
   }
 
   const ext = extname(file.name) || (file.type === "application/pdf" ? ".pdf" : ".jpg");
-  const filename = `${randomUUID()}${ext}`;
-  const uploadDir = join(process.cwd(), "public", "uploads", "documents");
+  const filename = `documents/${randomUUID()}${ext}`;
 
-  await mkdir(uploadDir, { recursive: true });
+  const blob = await put(filename, file, { access: "public" });
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(join(uploadDir, filename), buffer);
-
-  return NextResponse.json({ url: `/uploads/documents/${filename}` });
+  return NextResponse.json({ url: blob.url });
 }
