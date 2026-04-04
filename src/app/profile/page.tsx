@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ interface ProfileData {
   verificationStatus: string;
 }
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const searchParams = useSearchParams();
   const isWelcome = searchParams.get("welcome") === "true";
   const { user, isAuthenticated, token, setUser } = useAuthStore();
@@ -245,5 +245,13 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }
