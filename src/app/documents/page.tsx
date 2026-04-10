@@ -74,7 +74,8 @@ export default function DocumentsPage() {
         body: JSON.stringify({ ...form, docType, fileUrl: fileName }),
       });
       if (res.ok) {
-        setDocs((prev) => ({ ...prev, [docType]: { ...prev[docType], ...form, docType: docType as any, status: "pending", fileUrl: fileName } }));
+        const data = await res.json();
+        setDocs((prev) => ({ ...prev, [docType]: { ...prev[docType], ...form, id: data.id, docType: docType as any, status: "pending", fileUrl: fileName } }));
         setEditingType(null);
       }
     } finally {

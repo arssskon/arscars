@@ -43,6 +43,11 @@ const nextConfig = {
         hostname: "upload.wikimedia.org",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
     ],
   },
 };
