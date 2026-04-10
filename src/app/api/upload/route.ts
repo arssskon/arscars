@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const ext = extname(file.name) || (file.type === "application/pdf" ? ".pdf" : ".jpg");
   const filename = `documents/${randomUUID()}${ext}`;
 
-  const blob = await put(filename, file, { access: "private" });
+  const blob = await put(filename, file, { access: "public" });
 
   return NextResponse.json({ url: blob.url });
 }
