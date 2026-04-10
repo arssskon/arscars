@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function VehicleCard({ vehicle, distance, onSelect, selected, compact }: Props) {
+  const router = useRouter();
   const price = vehicle.baseTariff.pricePerMinCents / 100;
   const isElectric = vehicle.fuelType.name === "electric" || vehicle.fuelType.name === "hybrid";
 
@@ -82,11 +84,10 @@ export function VehicleCard({ vehicle, distance, onSelect, selected, compact }: 
   return (
     <Card
       className={cn(
-        "vehicle-card overflow-hidden border-2 transition-all group",
+        "vehicle-card overflow-hidden border-2 transition-all group cursor-pointer",
         selected ? "border-primary shadow-lg" : "border-transparent hover:border-primary/30 hover:shadow-md",
-        onSelect && "cursor-pointer"
       )}
-      onClick={() => onSelect?.(vehicle)}
+      onClick={() => { onSelect?.(vehicle); router.push(`/vehicles/${vehicle.id}`); }}
     >
       {/* Photo */}
       <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
