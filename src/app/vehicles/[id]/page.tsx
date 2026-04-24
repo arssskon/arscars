@@ -4,13 +4,25 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { GlassCard } from "@/components/ui/glass/GlassCard";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { GlassPanel } from "@/components/ui/glass/GlassPanel";
+import { GlassBadge } from "@/components/ui/glass/GlassBadge";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/lib/store";
-import { ArrowLeft, Star, Fuel, Zap, Settings2, MapPin, Clock, Shield, Check, CreditCard, AlertCircle, Gauge, Timer, Milestone } from "lucide-react";
+import {
+  ArrowLeft, Star, Fuel, Zap, Settings2, MapPin, Clock, Shield,
+  Check, CreditCard, AlertCircle, Gauge, Timer, Milestone,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { ClassBadge, deriveClass } from "@/components/ui/ClassBadge";
@@ -59,9 +71,7 @@ export default function VehicleDetailPage() {
   useEffect(() => {
     fetch(`/api/vehicles/${params.id}`)
       .then((r) => r.json())
-      .then((data) => {
-        if (data.error) { setVehicle(null); } else { setVehicle(data); }
-      })
+      .then((data) => { if (data.error) { setVehicle(null); } else { setVehicle(data); } })
       .catch(() => setVehicle(null))
       .finally(() => setLoading(false));
   }, [params.id]);
@@ -79,11 +89,7 @@ export default function VehicleDetailPage() {
         },
         body: JSON.stringify({ vehicleId: params.id }),
       });
-      if (res.status === 401) {
-        logout();
-        router.push("/login?redirect=/vehicles/" + params.id);
-        return;
-      }
+      if (res.status === 401) { logout(); router.push("/login?redirect=/vehicles/" + params.id); return; }
       if (!res.ok) {
         const data = await res.json();
         alert(data.error || "Ошибка бронирования");
@@ -98,8 +104,8 @@ export default function VehicleDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
-        <div className="text-muted-foreground">Загрузка...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div style={{ color: "var(--text-secondary)" }}>Загрузка...</div>
       </div>
     );
   }
@@ -107,219 +113,304 @@ export default function VehicleDetailPage() {
   if (!vehicle) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold mb-4">Автомобиль не найден</h1>
-        <Link href="/search"><Button>Вернуться</Button></Link>
+        <h1 className="text-2xl font-bold mb-4" style={{ color: "var(--text-primary)" }}>
+          Автомобиль не найден
+        </h1>
+        <Link href="/search">
+          <GlassButton variant="primary">Вернуться</GlassButton>
+        </Link>
       </div>
     );
   }
 
-  const price = vehicle.baseTariff.pricePerMinCents / 100;
+  const price     = vehicle.baseTariff.pricePerMinCents / 100;
   const minCharge = vehicle.baseTariff.minChargeCents / 100;
   const isElectric = vehicle.fuelType.name === "electric" || vehicle.fuelType.name === "hybrid";
-  const specs = modelSpecs[vehicle.model];
+  const specs      = modelSpecs[vehicle.model];
   const description = modelDescriptions[vehicle.model];
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="bg-background border-b">
+    <div className="min-h-screen">
+      {/* Back button bar */}
+      <div
+        style={{
+          background: "rgba(240, 236, 248, 0.75)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(181, 126, 220, 0.15)",
+        }}
+      >
         <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => router.back()} className="gap-2">
+          <GlassButton variant="ghost" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />Назад
-          </Button>
+          </GlassButton>
         </div>
       </div>
+
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
+
+          {/* ── LEFT: main content ── */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="overflow-hidden">
-              <div className="relative aspect-video bg-gradient-to-br from-muted to-muted/50">
+
+            {/* Car image */}
+            <GlassCard className="p-0 overflow-hidden">
+              <div className="relative aspect-video bg-lavender-50">
                 {vehicle.photoUrl ? (
                   <Image src={vehicle.photoUrl} alt={vehicle.model} fill className="object-cover" priority />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-muted-foreground">
+                  <div className="flex h-full items-center justify-center text-lavender-300">
                     <Settings2 className="h-24 w-24" />
                   </div>
                 )}
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <Badge className={cn(vehicle.status === "available" ? "bg-green-500" : "bg-muted text-muted-foreground")}>
+                  <GlassBadge variant={vehicle.status === "available" ? "success" : "neutral"}>
                     {vehicle.status === "available" ? "Доступен" : "Занят"}
-                  </Badge>
-                  <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
-                    {classLabels[vehicle.vehicleClass.name]}
-                  </Badge>
+                  </GlassBadge>
+                  <GlassBadge variant="lavender">{classLabels[vehicle.vehicleClass.name]}</GlassBadge>
                 </div>
               </div>
-            </Card>
+            </GlassCard>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <ClassBadge className={deriveClass(price)} />
-                    </div>
-                    <CardTitle className="text-3xl">{vehicle.brand} {vehicle.model}</CardTitle>
-                    {vehicle.year && <p className="text-muted-foreground mt-1">{vehicle.year} год</p>}
-                  </div>
-                  {vehicle.rating && (
-                    <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-full">
-                      <Star className="h-5 w-5 fill-primary text-primary" />
-                      <span className="font-bold text-primary">{vehicle.rating}</span>
-                    </div>
+            {/* Info card */}
+            <GlassCard>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <ClassBadge className={deriveClass(price)} />
+                  <h1
+                    className="text-3xl font-bold mt-2"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {vehicle.brand} {vehicle.model}
+                  </h1>
+                  {vehicle.year && (
+                    <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+                      {vehicle.year} год
+                    </p>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {description && <p className="text-muted-foreground leading-relaxed">{description}</p>}
-
-                {specs && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-center">
-                      <Gauge className="h-5 w-5 mx-auto mb-2 text-primary" />
-                      <p className="text-2xl font-bold text-primary">{specs.hp}</p>
-                      <p className="text-xs text-muted-foreground mt-1">л.с.</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-center">
-                      <Timer className="h-5 w-5 mx-auto mb-2 text-primary" />
-                      <p className="text-2xl font-bold text-primary">{specs.accel}с</p>
-                      <p className="text-xs text-muted-foreground mt-1">0–100 км/ч</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-center">
-                      <Milestone className="h-5 w-5 mx-auto mb-2 text-primary" />
-                      <p className="text-2xl font-bold text-primary">{specs.top}</p>
-                      <p className="text-xs text-muted-foreground mt-1">км/ч макс.</p>
-                    </div>
+                {vehicle.rating && (
+                  <div className="flex items-center gap-2 bg-lavender-100/60 px-3 py-2 rounded-full">
+                    <Star className="h-5 w-5 fill-lavender-400 text-lavender-400" />
+                    <span className="font-bold text-lavender-700">{vehicle.rating}</span>
                   </div>
                 )}
+              </div>
 
-                <Separator />
+              {description && (
+                <p className="mb-6 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                  {description}
+                </p>
+              )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-lg bg-muted/50 text-center">
-                    {isElectric ? <Zap className="h-6 w-6 mx-auto mb-2 text-green-600" /> : <Fuel className="h-6 w-6 mx-auto mb-2 text-primary" />}
-                    <p className="text-sm text-muted-foreground">Топливо</p>
-                    <p className="font-semibold">{fuelLabels[vehicle.fuelType.name]}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50 text-center">
-                    <Settings2 className="h-6 w-6 mx-auto mb-2 text-primary" />
-                    <p className="text-sm text-muted-foreground">Коробка</p>
-                    <p className="font-semibold">{transLabels[vehicle.transmission.name]}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50 text-center">
-                    <Fuel className="h-6 w-6 mx-auto mb-2 text-primary" />
-                    <p className="text-sm text-muted-foreground">{isElectric ? "Заряд" : "Топливо"}</p>
-                    <p className="font-semibold">
-                      {isElectric ? vehicle.lastState?.chargePercent : vehicle.lastState?.fuelPercent}%
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50 text-center">
-                    <MapPin className="h-6 w-6 mx-auto mb-2 text-primary" />
-                    <p className="text-sm text-muted-foreground">Зона</p>
-                    <p className="font-semibold">{vehicle.zoneName ?? "—"}</p>
-                  </div>
+              {/* Specs */}
+              {specs && (
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {[
+                    { icon: Gauge,     value: specs.hp,       unit: "л.с." },
+                    { icon: Timer,     value: `${specs.accel}с`, unit: "0–100 км/ч" },
+                    { icon: Milestone, value: specs.top,      unit: "км/ч макс." },
+                  ].map(({ icon: Icon, value, unit }) => (
+                    <div
+                      key={unit}
+                      className="p-4 rounded-2xl text-center"
+                      style={{ background: "rgba(181,126,220,0.08)", border: "1px solid rgba(181,126,220,0.15)" }}
+                    >
+                      <Icon className="h-5 w-5 mx-auto mb-2 text-lavender-500" />
+                      <p className="text-2xl font-bold text-lavender-600">{value}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{unit}</p>
+                    </div>
+                  ))}
                 </div>
+              )}
 
-                <Separator />
+              <Separator className="my-4 bg-lavender-100/40" />
 
-                <div>
-                  <h3 className="font-semibold text-lg mb-4">Включено в аренду</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {["КАСКО и ОСАГО", "Помощь 24/7", "Бесплатная парковка", "Топливо"].map((f) => (
-                      <div key={f} className="flex items-center gap-2">
-                        <Check className="h-5 w-5 text-green-600" />
-                        <span>{f}</span>
-                      </div>
-                    ))}
+              {/* Details grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {[
+                  {
+                    icon: isElectric ? Zap : Fuel,
+                    label: "Топливо",
+                    value: fuelLabels[vehicle.fuelType.name],
+                    electric: isElectric,
+                  },
+                  { icon: Settings2, label: "Коробка", value: transLabels[vehicle.transmission.name] },
+                  {
+                    icon: Fuel,
+                    label: isElectric ? "Заряд" : "Топливо",
+                    value: `${isElectric ? vehicle.lastState?.chargePercent : vehicle.lastState?.fuelPercent}%`,
+                  },
+                  { icon: MapPin, label: "Зона", value: vehicle.zoneName ?? "—" },
+                ].map(({ icon: Icon, label, value, electric }) => (
+                  <div
+                    key={label}
+                    className="p-4 rounded-xl text-center"
+                    style={{ background: "rgba(255,255,255,0.5)" }}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-6 w-6 mx-auto mb-2",
+                        electric ? "text-green-500" : "text-lavender-400"
+                      )}
+                    />
+                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{label}</p>
+                    <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{value}</p>
                   </div>
+                ))}
+              </div>
+
+              <Separator className="my-4 bg-lavender-100/40" />
+
+              <div>
+                <h3 className="font-semibold text-lg mb-4" style={{ color: "var(--text-primary)" }}>
+                  Включено в аренду
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {["КАСКО и ОСАГО", "Помощь 24/7", "Бесплатная парковка", "Топливо"].map((f) => (
+                    <div key={f} className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-green-500" />
+                      <span style={{ color: "var(--text-primary)" }}>{f}</span>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </GlassCard>
 
-            <Card>
-              <CardHeader><CardTitle>Тариф «{vehicle.baseTariff.name}»</CardTitle></CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 border border-primary/20">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Стоимость минуты</p>
-                    <p className="text-3xl font-bold text-primary">{price} ₽</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Минимум</p>
-                    <p className="text-xl font-semibold">{minCharge} ₽</p>
-                  </div>
+            {/* Bottom widgets row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <GlassPanel title="Расположение">
+                <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+                  <MapPin className="h-4 w-4 text-lavender-400 shrink-0" />
+                  <span>{vehicle.zoneName ?? "Центральный район"}</span>
                 </div>
-              </CardContent>
-            </Card>
+              </GlassPanel>
+
+              <GlassPanel title="Тариф">
+                <div className="space-y-1">
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                    {vehicle.baseTariff.name}
+                  </p>
+                  <p className="text-2xl font-black text-lavender-600">{price} ₽/мин</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    мин. {minCharge} ₽
+                  </p>
+                </div>
+              </GlassPanel>
+
+              <GlassPanel title="Статус">
+                <GlassBadge variant={vehicle.status === "available" ? "success" : "neutral"}>
+                  {vehicle.status === "available" ? "Доступен" : "Занят"}
+                </GlassBadge>
+                <p className="text-xs mt-2" style={{ color: "var(--text-secondary)" }}>
+                  {vehicle.status === "available"
+                    ? "Готов к бронированию"
+                    : "Автомобиль используется"}
+                </p>
+              </GlassPanel>
+            </div>
           </div>
 
+          {/* ── RIGHT: booking panel ── */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardHeader><CardTitle>Забронировать</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-muted-foreground">Цена/мин</span>
-                    <span className="text-2xl font-bold text-primary">{price} ₽</span>
+            <GlassPanel floating title="Забронировать" className="sticky top-24">
+              <div className="space-y-4">
+                <div
+                  className="p-4 rounded-2xl"
+                  style={{ background: "rgba(181,126,220,0.08)", border: "1px solid rgba(181,126,220,0.15)" }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span style={{ color: "var(--text-secondary)" }}>Цена/мин</span>
+                    <span className="text-2xl font-black text-lavender-600">{price} ₽</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Минимум</span>
-                    <span>от {minCharge} ₽</span>
+                    <span style={{ color: "var(--text-secondary)" }}>Минимум</span>
+                    <span style={{ color: "var(--text-primary)" }}>от {minCharge} ₽</span>
                   </div>
                 </div>
+
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm"><Clock className="h-5 w-5 text-primary" /><span>Бронь действует 15 минут</span></div>
-                  <div className="flex items-center gap-3 text-sm"><Shield className="h-5 w-5 text-primary" /><span>Страховка включена</span></div>
-                  <div className="flex items-center gap-3 text-sm"><CreditCard className="h-5 w-5 text-primary" /><span>Оплата по завершении</span></div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Clock className="h-5 w-5 text-lavender-400" />
+                    <span style={{ color: "var(--text-primary)" }}>Бронь действует 15 минут</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Shield className="h-5 w-5 text-lavender-400" />
+                    <span style={{ color: "var(--text-primary)" }}>Страховка включена</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <CreditCard className="h-5 w-5 text-lavender-400" />
+                    <span style={{ color: "var(--text-primary)" }}>Оплата по завершении</span>
+                  </div>
                 </div>
-                <Button
-                  className="w-full h-12 text-lg lavender-gradient text-white hover:opacity-90"
+
+                <GlassButton
+                  variant="primary"
+                  size="lg"
+                  className="w-full rounded-2xl"
                   disabled={vehicle.status !== "available"}
                   onClick={() => setShowDialog(true)}
                 >
                   {vehicle.status === "available" ? "Забронировать" : "Недоступен"}
-                </Button>
+                </GlassButton>
+
                 {!isAuthenticated && (
-                  <p className="text-sm text-center text-muted-foreground">
-                    <Link href="/login" className="text-primary hover:underline">Войдите</Link> для бронирования
+                  <p className="text-sm text-center" style={{ color: "var(--text-secondary)" }}>
+                    <Link href="/login" className="text-lavender-600 hover:underline">Войдите</Link>{" "}
+                    для бронирования
                   </p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </GlassPanel>
           </div>
         </div>
       </div>
 
+      {/* Booking confirmation dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
+        <DialogContent className="glass border-0 rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Подтверждение</DialogTitle>
-            <DialogDescription>Забронировать {vehicle.brand} {vehicle.model}?</DialogDescription>
+            <DialogTitle style={{ color: "var(--text-primary)" }}>Подтверждение</DialogTitle>
+            <DialogDescription style={{ color: "var(--text-secondary)" }}>
+              Забронировать {vehicle.brand} {vehicle.model}?
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-              <div className="h-16 w-24 rounded-lg overflow-hidden bg-muted">
+            <div
+              className="flex items-center gap-4 p-4 rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.5)" }}
+            >
+              <div className="h-16 w-24 rounded-xl overflow-hidden bg-lavender-50">
                 {vehicle.photoUrl && (
-                  <Image src={vehicle.photoUrl} alt={vehicle.model} width={96} height={64} className="w-full h-full object-cover" />
+                  <Image
+                    src={vehicle.photoUrl}
+                    alt={vehicle.model}
+                    width={96}
+                    height={64}
+                    className="w-full h-full object-cover"
+                  />
                 )}
               </div>
               <div>
-                <p className="font-semibold">{vehicle.brand} {vehicle.model}</p>
-                <p className="text-sm text-muted-foreground">{price} ₽/мин</p>
+                <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {vehicle.brand} {vehicle.model}
+                </p>
+                <p className="text-sm text-lavender-600">{price} ₽/мин</p>
               </div>
             </div>
-            <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
-              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="text-sm">
-                <p className="font-medium text-yellow-800">Бронь 15 минут</p>
-                <p className="text-yellow-700">Подойдите к авто вовремя</p>
+                <p className="font-medium text-amber-800">Бронь 15 минут</p>
+                <p className="text-amber-700">Подойдите к авто вовремя</p>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Отмена</Button>
-            <Button onClick={handleBook} disabled={booking} className="lavender-gradient text-white">
+            <GlassButton variant="primary" onClick={handleBook} disabled={booking}>
               {booking ? "..." : "Подтвердить"}
-            </Button>
+            </GlassButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

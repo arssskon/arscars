@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
-import { Card } from "@/components/ui/card";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { useSearchStore } from "@/lib/store";
 import { MapPin, RefreshCw } from "lucide-react";
@@ -153,6 +152,22 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       const isSelected = selectedVehicle?.id === vehicle.id;
 
       try {
+        const glassLayout = window.ymaps.templateLayoutFactory.createClass(
+          `<div style="
+            background:${isSelected ? "rgba(124,58,237,0.92)" : "rgba(255,255,255,0.88)"};
+            backdrop-filter:blur(8px);
+            -webkit-backdrop-filter:blur(8px);
+            border:1.5px solid ${isSelected ? "rgba(181,126,220,0.6)" : "rgba(181,126,220,0.4)"};
+            border-radius:999px;
+            padding:4px 10px;
+            font-weight:700;
+            font-size:13px;
+            color:${isSelected ? "#fff" : "#4C1D95"};
+            box-shadow:0 4px 12px rgba(124,58,237,0.18);
+            white-space:nowrap;
+          ">${price.toFixed(0)} ₽/мин</div>`
+        );
+
         const placemark = new window.ymaps.Placemark(
           [vehicle.lastState.lat, vehicle.lastState.lon],
           {
@@ -161,10 +176,8 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
             hintContent: `${vehicle.brand} ${vehicle.model} — ${price.toFixed(0)}₽/мин`,
           },
           {
-            preset: isSelected ? "islands#violetStretchyIcon" : "islands#blueStretchyIcon",
-            iconContentLayout: window.ymaps.templateLayoutFactory.createClass(
-              `<div style="font-size:11px;font-weight:700;color:${isSelected ? "#fff" : "#111"};padding:2px 4px;">${price.toFixed(0)}₽</div>`
-            ),
+            iconLayout: glassLayout,
+            iconShape: { type: "Rectangle", coordinates: [[-50, -16], [50, 16]] },
           }
         );
 
@@ -224,13 +237,20 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
         )}
 
         <div className="absolute bottom-4 left-4 z-[1000]">
-          <Card className="px-3 py-2 shadow-lg bg-white/95">
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span className="font-medium">Челябинск · Екатеринбург</span>
-              <span className="text-muted-foreground">{vehicles.length} авто</span>
-            </div>
-          </Card>
+          <div
+            className="flex items-center gap-2 text-sm px-3 py-2 rounded-full"
+            style={{
+              background: "rgba(255,255,255,0.85)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(181,126,220,0.35)",
+              boxShadow: "0 4px 12px rgba(124,58,237,0.12)",
+            }}
+          >
+            <MapPin className="h-4 w-4 text-lavender-600" />
+            <span className="font-medium text-lavender-900">Челябинск · Екатеринбург</span>
+            <span className="text-lavender-500">{vehicles.length} авто</span>
+          </div>
         </div>
       </div>
     </>

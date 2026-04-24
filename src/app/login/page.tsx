@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassPanel } from "@/components/ui/glass/GlassPanel";
+import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useAuthStore } from "@/lib/store";
 import { Car, Eye, EyeOff, Mail, Lock, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -50,44 +50,122 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4"><div className="h-14 w-14 rounded-2xl lavender-gradient flex items-center justify-center"><Car className="h-7 w-7 text-white" /></div></div>
-          <CardTitle className="text-2xl">Добро пожаловать в arscars</CardTitle>
-          <CardDescription>Войдите, чтобы найти автомобиль любого класса</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex gap-2 p-1 rounded-lg bg-muted">
-              <Button type="button" variant={type === "email" ? "secondary" : "ghost"} className={cn("flex-1", type === "email" && "bg-background shadow-sm")} onClick={() => setType("email")}><Mail className="h-4 w-4 mr-2" />Email</Button>
-              <Button type="button" variant={type === "phone" ? "secondary" : "ghost"} className={cn("flex-1", type === "phone" && "bg-background shadow-sm")} onClick={() => setType("phone")}><Phone className="h-4 w-4 mr-2" />Телефон</Button>
-            </div>
-            {type === "email" ? (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative"><Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input id="email" type="email" placeholder="ivan@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10" required /></div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="phone">Телефон</Label>
-                <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input id="phone" type="tel" placeholder="+7 (999) 123-45-67" value={phone} onChange={(e) => setPhone(e.target.value)} className="pl-10" required /></div>
-              </div>
-            )}
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+      <GlassPanel floating className="w-full max-w-md">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="h-14 w-14 rounded-2xl lavender-gradient flex items-center justify-center mb-3">
+            <Car className="h-7 w-7 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+            Добро пожаловать в arscars
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+            Войдите, чтобы найти автомобиль любого класса
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Tab switcher */}
+          <div className="flex gap-2 p-1 rounded-xl glass-light">
+            <button
+              type="button"
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
+                type === "email" ? "bg-white shadow-sm text-lavender-700" : "text-gray-500 hover:text-lavender-600"
+              )}
+              onClick={() => setType("email")}
+            >
+              <Mail className="h-4 w-4" />Email
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
+                type === "phone" ? "bg-white shadow-sm text-lavender-700" : "text-gray-500 hover:text-lavender-600"
+              )}
+              onClick={() => setType("phone")}
+            >
+              <Phone className="h-4 w-4" />Телефон
+            </button>
+          </div>
+
+          {type === "email" ? (
             <div className="space-y-2">
-              <div className="flex justify-between"><Label htmlFor="password">Пароль</Label><Link href="#" className="text-sm text-primary hover:underline">Забыли?</Link></div>
+              <Label htmlFor="email" style={{ color: "var(--text-primary)" }}>Email</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input id="password" type={showPwd ? "text" : "password"} placeholder="Введите пароль" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10 pr-10" required />
-                <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">{showPwd ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-lavender-400" />
+                <Input
+                  id="email" type="email" placeholder="ivan@example.com"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
+                  required
+                />
               </div>
             </div>
-            {error && <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
-            <Button type="submit" className="w-full h-12 lavender-gradient text-white" disabled={loading}>{loading ? "Вход..." : "Войти"}</Button>
-            <p className="text-center text-sm text-muted-foreground">Нет аккаунта? <Link href="/register" className="text-primary hover:underline font-medium">Зарегистрироваться</Link></p>
-          </form>
-        </CardContent>
-      </Card>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="phone" style={{ color: "var(--text-primary)" }}>Телефон</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-lavender-400" />
+                <Input
+                  id="phone" type="tel" placeholder="+7 (999) 123-45-67"
+                  value={phone} onChange={(e) => setPhone(e.target.value)}
+                  className="pl-10 bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label htmlFor="password" style={{ color: "var(--text-primary)" }}>Пароль</Label>
+              <Link href="#" className="text-sm text-lavender-600 hover:underline">Забыли?</Link>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-lavender-400" />
+              <Input
+                id="password" type={showPwd ? "text" : "password"}
+                placeholder="Введите пароль"
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10 bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd(!showPwd)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-lavender-400"
+              >
+                {showPwd ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+              {error}
+            </div>
+          )}
+
+          <GlassButton
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="w-full rounded-2xl"
+            disabled={loading}
+          >
+            {loading ? "Вход..." : "Войти"}
+          </GlassButton>
+
+          <p className="text-center text-sm" style={{ color: "var(--text-secondary)" }}>
+            Нет аккаунта?{" "}
+            <Link href="/register" className="text-lavender-600 hover:underline font-medium">
+              Зарегистрироваться
+            </Link>
+          </p>
+        </form>
+      </GlassPanel>
     </div>
   );
 }

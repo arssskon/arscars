@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* shadcn CSS variables */
     --background: 0 0% 100%;
     --foreground: 270 10% 15%;
     --card: 0 0% 100%;
@@ -29,7 +30,38 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+
+    /* Glass system */
+    --glass-bg:          rgba(255, 255, 255, 0.55);
+    --glass-bg-light:    rgba(255, 255, 255, 0.35);
+    --glass-bg-subtle:   rgba(255, 255, 255, 0.18);
+    --glass-border:      rgba(255, 255, 255, 0.45);
+    --glass-border-soft: rgba(181, 126, 220, 0.20);
+    --glass-shadow:      0 8px 32px rgba(124, 58, 237, 0.12),
+                         0 2px 8px  rgba(124, 58, 237, 0.06),
+                         inset 0 1px 0 rgba(255, 255, 255, 0.80);
+    --glass-shadow-lg:   0 20px 60px rgba(124, 58, 237, 0.18),
+                         0 4px 16px  rgba(124, 58, 237, 0.08),
+                         inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    --blur-sm:  blur(10px);
+    --blur-md:  blur(20px);
+    --blur-lg:  blur(40px);
+
+    /* Page background */
+    --page-bg: linear-gradient(145deg, #F0ECF8 0%, #EDE8F5 40%, #E8E2F2 100%);
+
+    /* Lavender palette */
+    --lavender-400: #B57EDC;
+    --lavender-600: #7C3AED;
+    --lavender-900: #4C1D95;
+
+    /* Typography */
+    --text-primary:   #1A1035;
+    --text-secondary: #6B7280;
+    --text-muted:     #9CA3AF;
+    --text-on-dark:   #F5F0FF;
   }
+
   .dark {
     --background: 270 15% 8%;
     --foreground: 270 5% 95%;
@@ -51,24 +83,81 @@
     --input: 270 10% 20%;
     --ring: 280 50% 65%;
   }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    background: var(--page-bg);
+    min-height: 100vh;
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 }
 
-@layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; font-feature-settings: "rlig" 1, "calt" 1; }
+/* ── Glass utility classes ──────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
-.lavender-gradient { background: linear-gradient(135deg, #B57EDC 0%, #9B59B6 100%); }
-.glass-effect { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.8); }
-.vehicle-card { transition: all 0.3s ease; }
-.vehicle-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(181, 126, 220, 0.15); }
+.glass-light {
+  background: var(--glass-bg-light);
+  backdrop-filter: var(--blur-sm);
+  -webkit-backdrop-filter: var(--blur-sm);
+  border: 1px solid var(--glass-border-soft);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-dark {
+  background: rgba(76, 29, 149, 0.15);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
+  border: 1px solid rgba(181, 126, 220, 0.30);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-hover:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+/* ── Backward-compat classes (admin + legacy) ───────────────────── */
+.lavender-gradient {
+  background: linear-gradient(135deg, #B57EDC 0%, #9B59B6 100%);
+}
+
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.vehicle-card {
+  transition: all 0.3s ease;
+}
+
+.vehicle-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(181, 126, 220, 0.15);
+}
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
+  0%   { transform: scale(0.8); opacity: 1; }
   100% { transform: scale(1.5); opacity: 0; }
 }
+
 .marker-pulse::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 100%;
   height: 100%;

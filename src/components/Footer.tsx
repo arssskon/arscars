@@ -9,7 +9,15 @@ export function Footer() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <footer className="py-10 border-t border-[#7C3AED]" style={{ backgroundColor: "#4C1D95" }}>
+    <footer
+      style={{
+        background: "rgba(76, 29, 149, 0.90)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: "1px solid rgba(181, 126, 220, 0.25)",
+      }}
+      className="py-10"
+    >
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
 
@@ -19,26 +27,20 @@ export function Footer() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg lavender-gradient">
                 <Car className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-white">
-                <span style={{ color: "#B57EDC" }}>ars</span>cars
-              </span>
+              <span className="text-xl font-bold tracking-tight text-white">arscars</span>
             </Link>
-            <p className="text-xs" style={{ color: "#E9D8F7" }}>
-              Каршеринг для всех классов и бюджетов
-            </p>
+            <p className="text-xs text-lavender-200">Каршеринг для всех классов и бюджетов</p>
           </div>
 
           {/* Nav links */}
-          <div className="flex gap-6 text-sm" style={{ color: "#E9D8F7" }}>
-            <Link href="/about"   className="hover:text-white transition-colors">О нас</Link>
-            <Link href="/support" className="hover:text-white transition-colors">Поддержка</Link>
-            <Link href="/terms"   className="hover:text-white transition-colors">Условия</Link>
+          <div className="flex gap-6 text-sm">
+            <Link href="/about"   className="text-lavender-300 hover:text-white transition-colors">О нас</Link>
+            <Link href="/support" className="text-lavender-300 hover:text-white transition-colors">Поддержка</Link>
+            <Link href="/terms"   className="text-lavender-300 hover:text-white transition-colors">Условия</Link>
           </div>
 
           {/* Copyright */}
-          <p className="text-sm" style={{ color: "rgba(233,216,247,0.6)" }}>
-            © 2026 arscars
-          </p>
+          <p className="text-xs text-lavender-400/70">© 2026 arscars</p>
         </div>
       </div>
     </footer>

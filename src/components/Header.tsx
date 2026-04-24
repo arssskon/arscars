@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { GlassButton } from "@/components/ui/glass";
 import { useAuthStore } from "@/lib/store";
 import { Menu, Search, Car, User, LogOut, History } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,10 +29,25 @@ export function Header() {
 
   if (pathname.startsWith("/admin")) return null;
 
-  const initials = user?.fullName?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "U";
+  const initials =
+    user?.fullName
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "U";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b-2 border-[#E9D8F7] bg-background/95 backdrop-blur">
+    <header
+      className="sticky top-0 z-50 w-full"
+      style={{
+        background: "rgba(240, 236, 248, 0.75)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(181, 126, 220, 0.15)",
+        boxShadow: "0 2px 20px rgba(124, 58, 237, 0.06)",
+      }}
+    >
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
 
         {/* Logo */}
@@ -34,32 +55,31 @@ export function Header() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg lavender-gradient">
             <Car className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold tracking-tight">
-            <span style={{ color: "#B57EDC" }}>ars</span>cars
-          </span>
+          <span className="text-xl font-bold tracking-tight text-[#1A1035]">arscars</span>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex md:items-center md:gap-1">
-          {nav.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link key={item.name} href={item.href}>
-                <Button
-                  variant={isActive ? "secondary" : "ghost"}
-                  className={cn(
-                    "gap-2 relative",
-                    isActive
-                      ? "bg-[#F5EFFE] text-[#7C3AED] font-semibold after:absolute after:bottom-0 after:left-2 after:right-2 after:h-0.5 after:rounded-full after:bg-[#B57EDC]"
-                      : "text-[#6B7280] hover:text-[#7C3AED] hover:bg-[#F5EFFE]"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
-                </Button>
-              </Link>
-            );
-          })}
+        {/* Desktop nav pills */}
+        <div className="hidden md:flex md:items-center">
+          <div className="glass-light rounded-full px-2 py-1.5 flex items-center gap-1">
+            {nav.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link key={item.name} href={item.href}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer",
+                      isActive
+                        ? "bg-lavender-400 text-white"
+                        : "text-lavender-900/70 hover:text-lavender-900 hover:bg-white/40"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.name}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
         {/* Right side */}
@@ -67,97 +87,102 @@ export function Header() {
           {isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <Avatar className="h-9 w-9 border-2 border-[#B57EDC]/30">
-                    <AvatarFallback className="bg-[#F5EFFE] text-[#7C3AED] text-sm font-medium">{initials}</AvatarFallback>
+                <button className="relative h-9 w-9 rounded-full focus:outline-none focus:ring-2 focus:ring-lavender-400/50">
+                  <Avatar className="h-9 w-9 border-2 border-lavender-400/30">
+                    <AvatarFallback className="bg-lavender-100 text-lavender-700 text-sm font-medium">
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 glass border-0 rounded-2xl">
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-[#F5EFFE] text-[#7C3AED] text-xs">{initials}</AvatarFallback>
+                    <AvatarFallback className="bg-lavender-100 text-lavender-700 text-xs">
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">{user.fullName}</span>
-                    <span className="text-xs text-muted-foreground">{user.email || user.phone}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)]">{user.fullName}</span>
+                    <span className="text-xs text-[var(--text-secondary)]">{user.email || user.phone}</span>
                   </div>
                 </div>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-lavender-200/30" />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile"><User className="mr-2 h-4 w-4" />Профиль</Link>
+                  <Link href="/profile" className="text-[var(--text-primary)]">
+                    <User className="mr-2 h-4 w-4 text-lavender-400" />Профиль
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/trips"><History className="mr-2 h-4 w-4" />Мои поездки</Link>
+                  <Link href="/trips" className="text-[var(--text-primary)]">
+                    <History className="mr-2 h-4 w-4 text-lavender-400" />Мои поездки
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-lavender-200/30" />
                 <DropdownMenuItem
-                  onClick={() => { logout(); document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT"; }}
-                  className="text-destructive"
+                  onClick={() => {
+                    logout();
+                    document.cookie = "auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+                  }}
+                  className="text-red-600"
                 >
                   <LogOut className="mr-2 h-4 w-4" />Выйти
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <div className="flex items-center gap-2">
-              <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost" className="text-[#7C3AED] hover:bg-[#F5EFFE] hover:text-[#4C1D95]">
-                  Войти
-                </Button>
+            <div className="hidden sm:flex items-center gap-2">
+              <Link href="/login">
+                <GlassButton variant="outline" size="sm">Войти</GlassButton>
               </Link>
               <Link href="/register">
-                <Button className="lavender-gradient text-white hover:opacity-90">Регистрация</Button>
+                <GlassButton variant="primary" size="sm">Регистрация</GlassButton>
               </Link>
             </div>
           )}
 
-          {/* Mobile menu */}
+          {/* Mobile hamburger */}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="text-[#7C3AED]">
+              <button className="p-2 rounded-full glass text-lavender-700">
                 <Menu className="h-5 w-5" />
-              </Button>
+              </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 border-l-2 border-[#E9D8F7]">
+            <SheetContent side="right" className="w-72 glass border-0">
               <div className="flex flex-col gap-4 pt-4">
                 <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg lavender-gradient">
                     <Car className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-lg font-bold">
-                    <span style={{ color: "#B57EDC" }}>ars</span>cars
-                  </span>
+                  <span className="text-lg font-bold text-[#1A1035]">arscars</span>
                 </Link>
                 <div className="flex flex-col gap-1 pt-4">
                   {nav.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                       <Link key={item.name} href={item.href} onClick={() => setOpen(false)}>
-                        <Button
-                          variant={isActive ? "secondary" : "ghost"}
+                        <div
                           className={cn(
-                            "w-full justify-start gap-2",
+                            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
                             isActive
-                              ? "bg-[#F5EFFE] text-[#7C3AED] font-semibold border-l-2 border-[#B57EDC]"
-                              : "text-[#6B7280] hover:text-[#7C3AED] hover:bg-[#F5EFFE]"
+                              ? "bg-lavender-400 text-white"
+                              : "text-lavender-900/70 hover:text-lavender-900 hover:bg-white/40"
                           )}
                         >
-                          <item.icon className="h-4 w-4" />{item.name}
-                        </Button>
+                          <item.icon className="h-4 w-4" />
+                          {item.name}
+                        </div>
                       </Link>
                     );
                   })}
                 </div>
                 {!isAuthenticated && (
-                  <div className="flex flex-col gap-2 pt-4 border-t border-[#E9D8F7]">
+                  <div className="flex flex-col gap-2 pt-4 border-t border-lavender-200/30">
                     <Link href="/login" onClick={() => setOpen(false)}>
-                      <Button variant="outline" className="w-full text-[#7C3AED] border-[#B57EDC]/40 hover:bg-[#F5EFFE]">
-                        Войти
-                      </Button>
+                      <GlassButton variant="outline" className="w-full">Войти</GlassButton>
                     </Link>
                     <Link href="/register" onClick={() => setOpen(false)}>
-                      <Button className="w-full lavender-gradient text-white">Регистрация</Button>
+                      <GlassButton variant="primary" className="w-full">Регистрация</GlassButton>
                     </Link>
                   </div>
                 )}
