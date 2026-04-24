@@ -99,8 +99,8 @@ export default function DashboardPage() {
           title: "В поездке",
           value: data.vehicles.in_trip,
           icon: Route,
-          color: "text-blue-600",
-          bg: "bg-blue-100",
+          color: "text-violet-600",
+          bg: "bg-violet-100",
         },
         {
           title: "На сервисе",
@@ -120,8 +120,8 @@ export default function DashboardPage() {
           title: "Активных поездок",
           value: data.activeTrips,
           icon: Clock,
-          color: "text-blue-600",
-          bg: "bg-blue-100",
+          color: "text-violet-600",
+          bg: "bg-violet-100",
         },
         {
           title: "Открытых инцидентов",

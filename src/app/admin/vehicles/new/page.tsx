@@ -49,7 +49,7 @@ export default function NewVehiclePage() {
   const [fuelTypes, setFuelTypes] = useState<RefOption[]>([]);
 
   const [form, setForm] = useState<FormData>({
-    brand: "Porsche",
+    brand: "",
     model: "",
     plateNumber: "",
     year: String(new Date().getFullYear()),
@@ -153,7 +153,7 @@ export default function NewVehiclePage() {
                 id="brand"
                 value={form.brand}
                 onChange={(e) => setField("brand", e.target.value)}
-                placeholder="Porsche"
+                placeholder="Toyota"
               />
               {errors.brand && <p className="text-xs text-red-500">{errors.brand}</p>}
             </div>
@@ -164,7 +164,7 @@ export default function NewVehiclePage() {
                 id="model"
                 value={form.model}
                 onChange={(e) => setField("model", e.target.value)}
-                placeholder="Taycan"
+                placeholder="Camry"
               />
               {errors.model && <p className="text-xs text-red-500">{errors.model}</p>}
             </div>

@@ -48,7 +48,7 @@ function formatDate(date: string) {
 
 const ACTION_COLORS: Record<string, string> = {
   create: "bg-emerald-100 text-emerald-800",
-  update: "bg-blue-100 text-blue-800",
+  update: "bg-violet-100 text-violet-800",
   delete: "bg-red-100 text-red-800",
   status_change: "bg-orange-100 text-orange-800",
   login: "bg-violet-100 text-violet-800",

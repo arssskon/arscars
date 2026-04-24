@@ -55,10 +55,10 @@ const mockPaymentMethods: PaymentMethod[] = [
 ];
 
 const mockTransactions: Transaction[] = [
-  { id: "tx-1", type: "capture", status: "succeeded", amountCents: 6750, description: "Поездка: Porsche 911 GT3", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), tripId: "trip-1" },
-  { id: "tx-2", type: "capture", status: "succeeded", amountCents: 18000, description: "Поездка: Porsche Cayenne", createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), tripId: "trip-2" },
+  { id: "tx-1", type: "capture", status: "succeeded", amountCents: 6750, description: "Поездка: BMW 5 Series", createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), tripId: "trip-1" },
+  { id: "tx-2", type: "capture", status: "succeeded", amountCents: 18000, description: "Поездка: Mercedes S-Class", createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), tripId: "trip-2" },
   { id: "tx-3", type: "refund", status: "succeeded", amountCents: 2000, description: "Возврат: Технические неполадки", createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-  { id: "tx-4", type: "capture", status: "succeeded", amountCents: 12500, description: "Поездка: Porsche Panamera", createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), tripId: "trip-3" },
+  { id: "tx-4", type: "capture", status: "succeeded", amountCents: 12500, description: "Поездка: Toyota Camry", createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), tripId: "trip-3" },
   { id: "tx-5", type: "preauth", status: "canceled", amountCents: 5000, description: "Бронирование отменено", createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000) },
 ];
 

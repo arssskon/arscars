@@ -55,8 +55,8 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4"><div className="h-14 w-14 rounded-2xl lavender-gradient flex items-center justify-center"><Car className="h-7 w-7 text-white" /></div></div>
-          <CardTitle className="text-2xl">Регистрация</CardTitle>
-          <CardDescription>Создайте аккаунт для аренды Porsche</CardDescription>
+          <CardTitle className="text-2xl">Создать аккаунт</CardTitle>
+          <CardDescription>Доступ к 500+ автомобилям за 2 минуты</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { Star, Fuel, Zap, MapPin, Settings2, Gauge, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ClassBadge, deriveClass } from "@/components/ui/ClassBadge";
 
 const fuelLabels: Record<string, string> = { petrol: "Бензин", diesel: "Дизель", electric: "Электро", hybrid: "Гибрид" };
 const transLabels: Record<string, string> = { AT: "Автомат", MT: "Механика", PDK: "PDK" };
@@ -92,7 +93,7 @@ export function VehicleCard({ vehicle, distance, onSelect, selected, compact }: 
         {vehicle.photoUrl ? (
           <Image
             src={vehicle.photoUrl}
-            alt={`Porsche ${vehicle.model}`}
+            alt={`${vehicle.brand} ${vehicle.model}`}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -105,13 +106,14 @@ export function VehicleCard({ vehicle, distance, onSelect, selected, compact }: 
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
         {/* Top badges */}
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
           <Badge className={cn(
             "text-xs font-semibold shadow",
             vehicle.status === "available" ? "bg-green-500 hover:bg-green-600" : "bg-slate-600 text-white"
           )}>
             {vehicle.status === "available" ? "Доступен" : "Занят"}
           </Badge>
+          <ClassBadge className={deriveClass(price)} />
         </div>
         <div className="absolute top-3 right-3">
           <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-xs font-medium border-white/50">

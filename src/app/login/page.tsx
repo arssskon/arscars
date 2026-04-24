@@ -54,8 +54,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4"><div className="h-14 w-14 rounded-2xl lavender-gradient flex items-center justify-center"><Car className="h-7 w-7 text-white" /></div></div>
-          <CardTitle className="text-2xl">Вход в arscars</CardTitle>
-          <CardDescription>Войдите, чтобы забронировать автомобиль</CardDescription>
+          <CardTitle className="text-2xl">Добро пожаловать в arscars</CardTitle>
+          <CardDescription>Войдите, чтобы найти автомобиль любого класса</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

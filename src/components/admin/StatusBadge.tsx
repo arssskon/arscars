@@ -7,7 +7,7 @@ type BadgeVariant = "green" | "yellow" | "blue" | "orange" | "red" | "gray" | "p
 const variantClasses: Record<BadgeVariant, string> = {
   green: "bg-emerald-100 text-emerald-800 border-emerald-200",
   yellow: "bg-amber-100 text-amber-800 border-amber-200",
-  blue: "bg-blue-100 text-blue-800 border-blue-200",
+  blue: "bg-violet-100 text-violet-800 border-violet-200",
   orange: "bg-orange-100 text-orange-800 border-orange-200",
   red: "bg-red-100 text-red-800 border-red-200",
   gray: "bg-gray-100 text-gray-600 border-gray-200",

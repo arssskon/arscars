@@ -5,33 +5,33 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Car, Shield, Clock, GraduationCap, Zap, Star, CheckCircle, ArrowRight, Smartphone, CreditCard, ChevronRight } from "lucide-react";
 
 const stats = [
-  { icon: Car,    value: "10+",  label: "Автомобилей в парке" },
-  { icon: MapPin, value: "2",    label: "Города присутствия" },
-  { icon: Shield, value: "0",    label: "Страховых случаев" },
-  { icon: Clock,  value: "24/7", label: "Поддержка" },
+  { icon: Car,    value: "500+", label: "Автомобилей в парке" },
+  { icon: MapPin, value: "12",   label: "Городов присутствия" },
+  { icon: Shield, value: "24/7", label: "Поддержка клиентов" },
+  { icon: Clock,  value: "5",    label: "Классов автомобилей" },
 ];
 
-const models = [
-  { name: "911 Carrera",  tag: "Спорт",        desc: "Легендарный заднеприводный спорткар" },
-  { name: "Cayenne",      tag: "SUV",           desc: "Мощный внедорожник с характером" },
-  { name: "Taycan",       tag: "Электро",       desc: "Будущее Porsche уже сегодня" },
-  { name: "Panamera",     tag: "Гран-туризмо",  desc: "Роскошь и динамика в одном" },
+const segments = [
+  { name: "Эконом",  price: "от 3 ₽/мин",  desc: "Городская мобильность для ежедневных поездок",    badge: "bg-green-100 text-green-800" },
+  { name: "Комфорт", price: "от 7 ₽/мин",  desc: "Комфортный седан для деловых и личных поездок",  badge: "bg-blue-100 text-blue-800" },
+  { name: "Бизнес",  price: "от 12 ₽/мин", desc: "Представительские авто для статусных поездок",   badge: "bg-amber-100 text-amber-800" },
+  { name: "Премиум", price: "от 20 ₽/мин", desc: "Роскошные автомобили высшего уровня комфорта",   badge: "bg-orange-100 text-orange-800" },
 ];
 
 const features = [
-  { icon: Star,        title: "Только Porsche",     desc: "Весь парк — автомобили Porsche. Никаких компромиссов с качеством." },
+  { icon: Star,        title: "Любой класс",        desc: "От эконома до элит — выбери автомобиль по вкусу и бюджету." },
   { icon: Zap,         title: "Мгновенный старт",   desc: "От регистрации до начала поездки — менее 5 минут." },
   { icon: Shield,      title: "Полная страховка",   desc: "КАСКО и ОСАГО включены в каждую поездку без доплат." },
-  { icon: MapPin,      title: "Два города",         desc: "Челябинск и Екатеринбург — зоны покрытия по 25 км." },
+  { icon: MapPin,      title: "12 городов",         desc: "Широкая сеть присутствия в крупных городах России." },
   { icon: CheckCircle, title: "Прозрачный тариф",   desc: "Платите только за время. Все цены видны до начала аренды." },
   { icon: Clock,       title: "Поддержка 24/7",     desc: "Горячая линия работает круглосуточно без выходных." },
 ];
 
 const steps = [
-  { step: "01", title: "Найдите авто",   desc: "Откройте карту и выберите ближайший автомобиль",            icon: MapPin },
-  { step: "02", title: "Забронируйте",   desc: "Подтвердите бронь — у вас будет 15 минут, чтобы подойти",  icon: Smartphone },
-  { step: "03", title: "Начните",        desc: "Нажмите «Начать» в разделе «Мои поездки» и поехали!",      icon: Car },
-  { step: "04", title: "Завершите",      desc: "Укажите место парковки на карте и оплатите по тарифу",      icon: CheckCircle },
+  { step: "01", title: "Выбери класс и авто",      desc: "Фильтруй по цене и классу — от эконома до элита",                icon: MapPin },
+  { step: "02", title: "Забронируй онлайн",         desc: "Подтвердите бронь — у вас будет 15 минут, чтобы подойти",       icon: Smartphone },
+  { step: "03", title: "Начните поездку",           desc: "Нажмите «Начать» в разделе «Мои поездки» и поехали!",          icon: Car },
+  { step: "04", title: "Завершите и оплатите",      desc: "Укажите место парковки на карте и оплатите по тарифу",          icon: CheckCircle },
 ];
 
 export default function AboutPage() {
@@ -59,13 +59,14 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 py-20 relative z-10 text-center max-w-3xl mx-auto">
           <Badge variant="secondary" className="gap-2 px-4 py-2 text-sm mb-6">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            Премиальный каршеринг
+            Каршеринг для всех
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
             О компании <span className="text-primary">arscars</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            Современный каршеринг автомобилей Porsche в Челябинске и Екатеринбурге — без покупки, без обслуживания, без лишних формальностей
+            Коммерческий каршеринг с автопарком более 500 автомобилей разных классов и ценовых категорий.
+            Мы работаем для всех: от студента до топ-менеджера.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/search">
@@ -105,20 +106,24 @@ export default function AboutPage() {
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
             <div>
               <Badge variant="outline" className="mb-4">Наша миссия</Badge>
-              <h2 className="text-4xl font-bold mb-6">Porsche — доступнее, чем вы думаете</h2>
+              <h2 className="text-4xl font-bold mb-6">Автомобиль для каждой задачи</h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
-                arscars создан для тех, кто ценит свободу передвижения и качество автомобиля. Мы предоставляем доступ к автомобилям Porsche без необходимости покупки и обслуживания.
+                arscars создан для тех, кто ценит свободу передвижения и хочет выбирать автомобиль
+                под конкретную задачу: утренняя поездка на работу, деловая встреча или поездка за город.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Сервис работает в Челябинске и Екатеринбурге, охватывая ключевые районы обоих городов. Мы постоянно расширяем парк и географию присутствия.
+                Мы предоставляем доступ к автомобилям 5 классов без необходимости покупки и обслуживания.
+                Сервис работает в 12 городах России и постоянно расширяет географию.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {models.map(({ name, tag, desc }) => (
+              {segments.map(({ name, price, desc, badge }) => (
                 <Card key={name} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
                   <CardContent className="p-5">
-                    <Badge variant="secondary" className="text-xs mb-3">{tag}</Badge>
-                    <h3 className="font-bold mb-1">Porsche {name}</h3>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold mb-3 ${badge}`}>
+                      {name}
+                    </span>
+                    <h3 className="font-bold mb-1">{price}</h3>
                     <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
                   </CardContent>
                 </Card>
@@ -134,7 +139,7 @@ export default function AboutPage() {
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Badge variant="outline" className="mb-4">Преимущества</Badge>
             <h2 className="text-4xl font-bold mb-4">Почему arscars</h2>
-            <p className="text-lg text-muted-foreground">Мы сделали аренду премиальных автомобилей простой и доступной</p>
+            <p className="text-lg text-muted-foreground">Мы сделали аренду автомобилей простой и доступной для всех</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {features.map(({ icon: Icon, title, desc }) => (
@@ -191,7 +196,7 @@ export default function AboutPage() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
               <div className="relative z-10 max-w-2xl">
                 <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Готовы к первой поездке?</h2>
-                <p className="text-xl text-white/80 mb-8">Зарегистрируйтесь и выберите свой Porsche прямо сейчас</p>
+                <p className="text-xl text-white/80 mb-8">Зарегистрируйтесь и выберите автомобиль любого класса прямо сейчас</p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link href="/register">
                     <Button size="lg" className="h-14 px-8 text-lg bg-white text-primary hover:bg-white/90">

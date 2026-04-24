@@ -13,6 +13,7 @@ import { useAuthStore } from "@/lib/store";
 import { ArrowLeft, Star, Fuel, Zap, Settings2, MapPin, Clock, Shield, Check, CreditCard, AlertCircle, Gauge, Timer, Milestone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { VehicleWithDetails } from "@/lib/mock-data";
+import { ClassBadge, deriveClass } from "@/components/ui/ClassBadge";
 
 type VehicleDetail = VehicleWithDetails & { zoneName?: string | null };
 
@@ -41,7 +42,7 @@ const modelDescriptions: Record<string, string> = {
   "Cayenne":        "Спортивный SUV, который не делает компромиссов. Динамика спорткара в кузове внедорожника с просторным салоном.",
   "Cayenne Turbo":  "Турбо-мощь и полный привод. Разгон до 100 за 3.9 с, но при этом — комфорт премиум-класса для всей семьи.",
   "Panamera":       "Гранд-туризмо четырёх дверей. Просторный салон, роскошь и спортивная динамика в одном неповторимом облике.",
-  "Taycan":         "Будущее началось уже сейчас. Полностью электрический суперкар Porsche с мгновенным крутящим моментом и запасом хода 450 км.",
+  "Taycan":         "Будущее началось уже сейчас. Полностью электрический суперкар с мгновенным крутящим моментом и запасом хода 450 км.",
   "Taycan Turbo S": "Вершина электрической эволюции. 761 л.с., разгон до 100 за 2.8 с и роскошный салон — превосходство без компромиссов.",
   "Macan":          "Компактный спортивный SUV с ярким характером. Манёвренный, стремительный и элегантный — идеален для городских приключений.",
 };
@@ -154,6 +155,9 @@ export default function VehicleDetailPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <ClassBadge className={deriveClass(price)} />
+                    </div>
                     <CardTitle className="text-3xl">{vehicle.brand} {vehicle.model}</CardTitle>
                     {vehicle.year && <p className="text-muted-foreground mt-1">{vehicle.year} год</p>}
                   </div>

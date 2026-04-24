@@ -82,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
         <div>
           <span className="text-lg font-bold text-white">
-            <span className="text-violet-400">ars</span>cars
+            <span className="text-blue-400">ars</span>cars
           </span>
           <p className="text-xs text-slate-400 leading-none mt-0.5">Панель управления</p>
         </div>

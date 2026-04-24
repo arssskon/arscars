@@ -7,8 +7,8 @@ import { Footer } from "@/components/Footer";
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "arscars - Каршеринг Porsche",
-  description: "Премиальный каршеринг автомобилей Porsche в Москве",
+  title: "arscars - Каршеринг для всех",
+  description: "Коммерческий каршеринг 500+ автомобилей 5 классов. Эконом, Комфорт, Бизнес, Премиум, Элит. От 3 ₽/мин.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
