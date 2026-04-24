@@ -10,6 +10,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        'lavender':       '#B57EDC',
+        'lavender-light': '#E9D8F7',
+        'lavender-pale':  '#F5EFFE',
+        'lavender-deep':  '#7C3AED',
+        'lavender-dark':  '#4C1D95',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
