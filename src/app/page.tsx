@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { VehicleCard } from "@/components/VehicleCard";
@@ -98,36 +99,51 @@ export default function HomePage() {
         <div className="absolute bottom-20 left-20 w-64 h-64 rounded-full blur-2xl opacity-20 bg-lavender-light" />
 
         <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="max-w-3xl space-y-8">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30">
-              <Car className="h-4 w-4" />
-              Каршеринг для всех классов
-            </span>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30">
+                <Car className="h-4 w-4" />
+                Каршеринг для всех классов
+              </span>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white">
-              Каршеринг для всех.<br />
-              <span className="text-lavender-light">Автомобиль от 3 ₽/мин</span>
-            </h1>
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white">
+                Каршеринг для всех.<br />
+                <span className="text-lavender-light">Автомобиль от 3 ₽/мин</span>
+              </h1>
 
-            <p className="text-xl text-white/80 max-w-2xl">
-              500+ автомобилей 5 классов в вашем городе. Эконом, Комфорт, Бизнес, Премиум, Элит.
-            </p>
+              <p className="text-xl text-white/80 max-w-2xl">
+                500+ автомобилей 5 классов в вашем городе. Эконом, Комфорт, Бизнес, Премиум, Элит.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/search">
-                <Button size="lg"
-                  className="w-full sm:w-auto gap-2 h-14 px-8 text-lg bg-white hover:bg-lavender-pale text-lavender-deep font-semibold border-0"
-                >
-                  <MapPin className="h-5 w-5" />Найти автомобиль
-                </Button>
-              </Link>
-              <Link href="/about">
-                <Button size="lg" variant="outline"
-                  className="w-full sm:w-auto gap-2 h-14 px-8 text-lg border-white/50 bg-white/10 text-white hover:bg-white/20"
-                >
-                  Смотреть тарифы<ArrowRight className="h-5 w-5" />
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/search">
+                  <Button size="lg"
+                    className="w-full sm:w-auto gap-2 h-14 px-8 text-lg bg-white hover:bg-lavender-pale text-lavender-deep font-semibold border-0"
+                  >
+                    <MapPin className="h-5 w-5" />Найти автомобиль
+                  </Button>
+                </Link>
+                <Link href="/about">
+                  <Button size="lg" variant="outline"
+                    className="w-full sm:w-auto gap-2 h-14 px-8 text-lg border-white/50 bg-white/10 text-white hover:bg-white/20"
+                  >
+                    Смотреть тарифы<ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="hidden lg:flex justify-center items-center">
+              <div className="relative" style={{ filter: "drop-shadow(0 20px 60px rgba(181,126,220,0.45))" }}>
+                <Image
+                  src="/hero-car.png"
+                  alt="arscars — автомобиль и приложение"
+                  width={560}
+                  height={480}
+                  priority
+                  className="w-full max-w-[560px] object-contain"
+                />
+              </div>
             </div>
           </div>
         </div>
