@@ -69,7 +69,7 @@ export default function SearchPage() {
           <Popover open={showFilters} onOpenChange={setShowFilters}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="h-12 gap-2">
-                <SlidersHorizontal className="h-4 w-4" />Фильтры{activeCount > 0 && <Badge className="ml-1 h-5 w-5 rounded-full p-0 text-xs">{activeCount}</Badge>}
+                <SlidersHorizontal className="h-4 w-4" />Фильтры{activeCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-semibold leading-none">{activeCount}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-4" align="end">
