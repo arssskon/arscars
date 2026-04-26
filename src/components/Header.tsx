@@ -53,7 +53,7 @@ export function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center">
-          <Image src="/logo.png" alt="arscars" width={200} height={56} priority className="h-12 w-auto object-contain" />
+          <Image src="/logo.png" alt="arscars" width={400} height={112} priority className="h-24 w-auto object-contain" />
         </Link>
 
         {/* Desktop nav pills */}
@@ -149,7 +149,7 @@ export function Header() {
             <SheetContent side="right" className="w-72 glass border-0">
               <div className="flex flex-col gap-4 pt-4">
                 <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
-                  <Image src="/logo.png" alt="arscars" width={160} height={46} className="h-10 w-auto object-contain" />
+                  <Image src="/logo.png" alt="arscars" width={320} height={92} className="h-20 w-auto object-contain" />
                 </Link>
                 <div className="flex flex-col gap-1 pt-4">
                   {nav.map((item) => {

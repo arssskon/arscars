@@ -27,9 +27,9 @@ export function Footer() {
               <Image
                 src="/logo.png"
                 alt="arscars"
-                width={190}
-                height={54}
-                className="h-12 w-auto object-contain brightness-0 invert"
+                width={380}
+                height={108}
+                className="h-24 w-auto object-contain brightness-0 invert"
               />
             </Link>
             <p className="text-xs text-lavender-200">Каршеринг для всех классов и бюджетов</p>
