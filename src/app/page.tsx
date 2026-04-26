@@ -402,16 +402,42 @@ export default function HomePage() {
       {/* ── CTA ───────────────────────────────────────────────────────── */}
       <motion.section {...sectionProps} className="py-24">
         <div className="container mx-auto px-4">
-          <GlassCard dark className="text-center py-16 px-8">
-            <h2 className="text-3xl font-bold text-white mb-3">Начни ездить сегодня</h2>
-            <p className="text-lavender-200 mb-8">Регистрация занимает 3 минуты</p>
-            <Link href="/register">
-              <GlassButton variant="primary" size="lg">
-                <CreditCard className="h-5 w-5" />
-                Создать аккаунт
-              </GlassButton>
-            </Link>
-          </GlassCard>
+          <div
+            className="relative overflow-hidden rounded-3xl text-center py-16 px-8"
+            style={{
+              background: "linear-gradient(135deg, #6D28D9 0%, #4C1D95 60%, #3B1678 100%)",
+              boxShadow: "0 20px 60px rgba(76,29,149,0.40), 0 4px 16px rgba(76,29,149,0.25)",
+            }}
+          >
+            {/* decorative blobs */}
+            <div
+              className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-20"
+              style={{ background: "#B57EDC", filter: "blur(40px)" }}
+            />
+            <div
+              className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full opacity-15"
+              style={{ background: "#DDD6FE", filter: "blur(32px)" }}
+            />
+
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-4xl font-black text-white mb-3 drop-shadow-sm">
+                Начни ездить сегодня
+              </h2>
+              <p className="text-lavender-200 text-base mb-8 opacity-90">
+                Регистрация занимает 3 минуты
+              </p>
+              <Link href="/register">
+                <GlassButton
+                  variant="ghost"
+                  size="lg"
+                  className="border border-white/30 text-white hover:bg-white/20"
+                >
+                  <CreditCard className="h-5 w-5" />
+                  Создать аккаунт
+                </GlassButton>
+              </Link>
+            </div>
+          </div>
         </div>
       </motion.section>
 
