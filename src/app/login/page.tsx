@@ -55,7 +55,7 @@ export default function LoginPage() {
       <GlassPanel floating className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <Image src="/logo.png" alt="arscars" width={160} height={46} className="h-11 w-auto object-contain mb-3" />
+          <Image src="/logo.png" alt="arscars" width={220} height={64} className="h-14 w-auto object-contain mb-3" />
           <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
             Добро пожаловать
           </h1>
