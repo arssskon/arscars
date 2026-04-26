@@ -161,16 +161,16 @@ export default function HomePage() {
                 />
               </div>
               <div className="absolute top-4 right-0">
-                <GlassPanel floating className="min-w-[220px]">
-                  <div className="flex gap-6 justify-center">
+                <GlassPanel floating className="min-w-[320px] px-8 py-6">
+                  <div className="flex gap-10 justify-center">
                     {[
                       { val: "500+", label: "авто" },
                       { val: "5",    label: "классов" },
                       { val: "3 ₽",  label: "/мин" },
                     ].map((s) => (
                       <div key={s.label} className="text-center">
-                        <div className="text-xl font-black text-lavender-600">{s.val}</div>
-                        <div className="text-xs text-gray-500">{s.label}</div>
+                        <div className="text-3xl font-black text-lavender-600">{s.val}</div>
+                        <div className="text-sm text-gray-500 mt-1">{s.label}</div>
                       </div>
                     ))}
                   </div>
