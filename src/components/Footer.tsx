@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Car } from "lucide-react";
 
 export function Footer() {
   const pathname = usePathname();
@@ -23,11 +23,14 @@ export function Footer() {
 
           {/* Logo + tagline */}
           <div className="flex flex-col items-center md:items-start gap-1.5">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg lavender-gradient">
-                <Car className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-white">arscars</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="arscars"
+                width={130}
+                height={38}
+                className="h-9 w-auto object-contain brightness-0 invert"
+              />
             </Link>
             <p className="text-xs text-lavender-200">Каршеринг для всех классов и бюджетов</p>
           </div>

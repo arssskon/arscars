@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 import { GlassPanel } from "@/components/ui/glass/GlassPanel";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useAuthStore } from "@/lib/store";
-import { Car, Eye, EyeOff, Mail, Lock, Phone } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -54,11 +55,9 @@ export default function LoginPage() {
       <GlassPanel floating className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <div className="h-14 w-14 rounded-2xl lavender-gradient flex items-center justify-center mb-3">
-            <Car className="h-7 w-7 text-white" />
-          </div>
+          <Image src="/logo.png" alt="arscars" width={160} height={46} className="h-11 w-auto object-contain mb-3" />
           <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-            Добро пожаловать в arscars
+            Добро пожаловать
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
             Войдите, чтобы найти автомобиль любого класса

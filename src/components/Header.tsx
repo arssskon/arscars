@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GlassButton } from "@/components/ui/glass";
 import { useAuthStore } from "@/lib/store";
-import { Menu, Search, Car, User, LogOut, History } from "lucide-react";
+import { Menu, Search, User, LogOut, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -51,11 +52,8 @@ export function Header() {
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
 
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg lavender-gradient">
-            <Car className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-[#1A1035]">arscars</span>
+        <Link href="/" className="flex items-center">
+          <Image src="/logo.png" alt="arscars" width={140} height={40} priority className="h-9 w-auto object-contain" />
         </Link>
 
         {/* Desktop nav pills */}
@@ -150,11 +148,8 @@ export function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-72 glass border-0">
               <div className="flex flex-col gap-4 pt-4">
-                <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg lavender-gradient">
-                    <Car className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-lg font-bold text-[#1A1035]">arscars</span>
+                <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
+                  <Image src="/logo.png" alt="arscars" width={120} height={34} className="h-8 w-auto object-contain" />
                 </Link>
                 <div className="flex flex-col gap-1 pt-4">
                   {nav.map((item) => {

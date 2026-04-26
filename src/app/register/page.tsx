@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 import { GlassPanel } from "@/components/ui/glass/GlassPanel";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useAuthStore } from "@/lib/store";
-import { Car, Eye, EyeOff, Mail, Lock, User, Phone, Calendar, Check } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, Calendar, Check } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -59,9 +60,7 @@ export default function RegisterPage() {
       <GlassPanel floating className="w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <div className="h-14 w-14 rounded-2xl lavender-gradient flex items-center justify-center mb-3">
-            <Car className="h-7 w-7 text-white" />
-          </div>
+          <Image src="/logo.png" alt="arscars" width={160} height={46} className="h-11 w-auto object-contain mb-3" />
           <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
             Создать аккаунт
           </h1>
