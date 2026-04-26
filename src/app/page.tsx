@@ -154,10 +154,10 @@ export default function HomePage() {
                 <Image
                   src="/hero-car.png"
                   alt="arscars — автомобиль"
-                  width={560}
-                  height={480}
+                  width={820}
+                  height={700}
                   priority
-                  className="w-full max-w-[560px] object-contain"
+                  className="w-full max-w-[820px] object-contain"
                 />
               </div>
               <div className="absolute top-4 right-0">
