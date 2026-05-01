@@ -145,11 +145,20 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
     });
     placemarkRefs.current = [];
 
+    // Global handler registry — inline onclick in template strings is the
+    // only reliable way to capture clicks on custom Yandex Maps iconLayouts
+    // because ymaps applies pointer-events:none to icon overlay layers.
+    if (!(window as any).__arscarsMarkers) (window as any).__arscarsMarkers = {};
+
     vehicles.forEach((vehicle) => {
       if (!vehicle.lastState) return;
 
       const price = vehicle.baseTariff.pricePerMinCents / 100;
       const isSelected = selectedVehicle?.id === vehicle.id;
+
+      // Register handler in global registry so inline onclick can reach it
+      const hid = `m_${vehicle.id}`;
+      (window as any).__arscarsMarkers[hid] = () => onVehicleSelect?.(vehicle);
 
       try {
         const bg  = isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)";
@@ -159,25 +168,23 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
           ? "0 4px 16px rgba(109,40,217,0.40)"
           : "0 4px 14px rgba(124,58,237,0.18)";
 
-        const selectVehicle = onVehicleSelect;
-        const currentVehicle = vehicle;
-
         const glassLayout = window.ymaps.templateLayoutFactory.createClass(
-          `<div style="
-            display:inline-flex;align-items:center;
-            background:${bg};
-            backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-            border:1.5px solid ${bdr};
-            border-radius:999px;
-            padding:5px 13px;
-            font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
-            font-weight:700;font-size:13px;line-height:1;
-            color:${clr};
-            box-shadow:${shd};
-            white-space:nowrap;cursor:pointer;
-            pointer-events:auto;
-            position:relative;
-          ">
+          `<div
+            onclick="(window.__arscarsMarkers&&window.__arscarsMarkers['${hid}']&&window.__arscarsMarkers['${hid}'](event.stopPropagation()))"
+            style="
+              display:inline-flex;align-items:center;
+              background:${bg};
+              backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+              border:1.5px solid ${bdr};
+              border-radius:999px;
+              padding:5px 13px;
+              font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+              font-weight:700;font-size:13px;line-height:1;
+              color:${clr};
+              box-shadow:${shd};
+              white-space:nowrap;cursor:pointer;
+              position:relative;
+            ">
             ${price.toFixed(0)}&nbsp;₽/мин
             <span style="
               position:absolute;bottom:-6px;left:50%;
@@ -187,21 +194,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
               border-right:5px solid transparent;
               border-top:6px solid ${bg};
             "></span>
-          </div>`,
-          {
-            build: function (this: any) {
-              this.constructor.superclass.build.call(this);
-              const el: HTMLElement = this.getParentElement();
-              el.style.pointerEvents = "auto";
-              this._handler = () => selectVehicle?.(currentVehicle);
-              el.addEventListener("click", this._handler);
-            },
-            clear: function (this: any) {
-              const el: HTMLElement = this.getParentElement();
-              if (this._handler) el.removeEventListener("click", this._handler);
-              this.constructor.superclass.clear.call(this);
-            },
-          }
+          </div>`
         );
 
         const placemark = new window.ymaps.Placemark(
