@@ -152,55 +152,17 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       const isSelected = selectedVehicle?.id === vehicle.id;
 
       try {
-        const bg  = isSelected ? "rgba(109,40,217,0.93)"    : "rgba(255,255,255,0.92)";
-        const bdr = isSelected ? "rgba(167,139,250,0.80)"   : "rgba(181,126,220,0.50)";
-        const clr = isSelected ? "#ffffff"                   : "#4C1D95";
-        const shd = isSelected
-          ? "0 4px 16px rgba(109,40,217,0.40)"
-          : "0 4px 14px rgba(124,58,237,0.18)";
-
-        const glassLayout = window.ymaps.templateLayoutFactory.createClass(
-          `<div style="
-            display:inline-flex;align-items:center;
-            background:${bg};
-            backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-            border:1.5px solid ${bdr};
-            border-radius:999px;
-            padding:5px 13px;
-            font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
-            font-weight:700;font-size:13px;line-height:1;
-            color:${clr};
-            box-shadow:${shd};
-            white-space:nowrap;cursor:pointer;
-            position:relative;
-          ">
-            ${price.toFixed(0)}&nbsp;₽/мин
-            <span style="
-              position:absolute;bottom:-6px;left:50%;
-              transform:translateX(-50%);
-              width:0;height:0;
-              border-left:5px solid transparent;
-              border-right:5px solid transparent;
-              border-top:6px solid ${bg};
-            "></span>
-          </div>`
-        );
-
         const placemark = new window.ymaps.Placemark(
           [vehicle.lastState.lat, vehicle.lastState.lon],
           {
+            iconContent: `${price.toFixed(0)} ₽/мин`,
             balloonContentHeader: `${vehicle.brand} ${vehicle.model}`,
             balloonContentBody: `${price.toFixed(0)} ₽/мин · ${vehicle.year}`,
             hintContent: `${vehicle.brand} ${vehicle.model} — ${price.toFixed(0)} ₽/мин`,
           },
           {
-            iconLayout: glassLayout,
-            iconOffset: [-52, -36],
-            // clickable area matches the visual pill position
-            iconShape: {
-              type: "Rectangle",
-              coordinates: [[-52, -36], [52, -8]],
-            },
+            preset: "islands#stretchyIcon",
+            iconColor: isSelected ? "#7C3AED" : "#B57EDC",
           }
         );
 
