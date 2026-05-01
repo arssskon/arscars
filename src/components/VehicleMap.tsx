@@ -152,32 +152,19 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       const isSelected = selectedVehicle?.id === vehicle.id;
 
       try {
-        const glassLayout = window.ymaps.templateLayoutFactory.createClass(
-          `<div style="
-            background:${isSelected ? "rgba(124,58,237,0.92)" : "rgba(255,255,255,0.88)"};
-            backdrop-filter:blur(8px);
-            -webkit-backdrop-filter:blur(8px);
-            border:1.5px solid ${isSelected ? "rgba(181,126,220,0.6)" : "rgba(181,126,220,0.4)"};
-            border-radius:999px;
-            padding:4px 10px;
-            font-weight:700;
-            font-size:13px;
-            color:${isSelected ? "#fff" : "#4C1D95"};
-            box-shadow:0 4px 12px rgba(124,58,237,0.18);
-            white-space:nowrap;
-          ">${price.toFixed(0)} ₽/мин</div>`
-        );
-
         const placemark = new window.ymaps.Placemark(
           [vehicle.lastState.lat, vehicle.lastState.lon],
           {
+            iconContent: `${price.toFixed(0)} ₽/мин`,
             balloonContentHeader: `${vehicle.brand} ${vehicle.model}`,
             balloonContentBody: `${price.toFixed(0)}₽/мин · ${vehicle.year}`,
             hintContent: `${vehicle.brand} ${vehicle.model} — ${price.toFixed(0)}₽/мин`,
           },
           {
-            iconLayout: glassLayout,
-            iconShape: { type: "Rectangle", coordinates: [[-50, -16], [50, 16]] },
+            preset: isSelected
+              ? "islands#violetStretchyIcon"
+              : "islands#lightBlueStretchyIcon",
+            iconColor: isSelected ? "#7C3AED" : "#B57EDC",
           }
         );
 
