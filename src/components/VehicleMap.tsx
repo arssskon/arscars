@@ -196,6 +196,11 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
           {
             iconLayout: glassLayout,
             iconOffset: [-52, -36],
+            // clickable area matches the visual pill position
+            iconShape: {
+              type: "Rectangle",
+              coordinates: [[-52, -36], [52, -8]],
+            },
           }
         );
 
