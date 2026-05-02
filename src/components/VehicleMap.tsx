@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Script from "next/script";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { useSearchStore } from "@/lib/store";
@@ -24,14 +25,15 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   const mapInstance   = useRef<any>(null);
   const vehiclesRef   = useRef(vehicles);
   const onSelectRef   = useRef(onVehicleSelect);
-  // Map from vehicle id → wrapper <div> rendered in the overlay
   const markerDivRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [mapReady, setMapReady]         = useState(false);
   const [mapError, setMapError]         = useState(false);
-  // Controls WHICH markers exist in the DOM (triggers re-render only when list changes)
   const [vehicleList, setVehicleList]   = useState<VehicleWithDetails[]>([]);
+  // Custom pane div injected inside ymaps' inner-panes —
+  // participates in the same CSS transform ymaps uses for smooth pan/zoom
+  const [customPane, setCustomPane]     = useState<HTMLElement | null>(null);
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY;
 
@@ -51,8 +53,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
     } catch { return { x: -9999, y: -9999 }; }
   };
 
-  // Positions are written directly to DOM — no React state, no re-render.
-  // This runs at 60 fps during map pan without causing any lag.
+  // Write positions directly to DOM — no React state, no re-render
   const updatePositions = useCallback(() => {
     if (!mapInstance.current) return;
     for (const v of vehiclesRef.current) {
@@ -71,6 +72,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       try { mapInstance.current.destroy(); } catch {}
       mapInstance.current = null;
       setMapReady(false);
+      setCustomPane(null);
       markerDivRefs.current.clear();
     }
     try {
@@ -83,6 +85,21 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       setMapError(false);
       setMapReady(true);
 
+      // Inject our pane inside ymaps' inner-panes.
+      // ymaps applies CSS transform to inner-panes during pan/zoom —
+      // our markers inside it move with tiles automatically (zero lag).
+      requestAnimationFrame(() => {
+        if (!mapRef.current) return;
+        const innerPanes = mapRef.current.querySelector<HTMLElement>('[class*="inner-panes"]');
+        if (!innerPanes) return;
+        const pane = document.createElement("div");
+        pane.style.cssText = "position:absolute;top:0;left:0;z-index:2600;pointer-events:none;";
+        innerPanes.appendChild(pane);
+        setCustomPane(pane);
+      });
+
+      // Reposition markers after pan/zoom settles (CSS transform is removed by ymaps)
+      map.events.add("boundschange", () => requestAnimationFrame(updatePositions));
       map.events.add("sizechange", updatePositions);
 
       if (navigator.geolocation) {
@@ -123,6 +140,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
         mapInstance.current = null;
       }
       setMapReady(false);
+      setCustomPane(null);
       markerDivRefs.current.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,28 +168,14 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptLoaded, buildMap, updatePositions]);
 
-  // Update the rendered list only when vehicles prop changes (infrequent)
   useEffect(() => {
     setVehicleList(vehicles.filter(v => !!v.lastState));
   }, [vehicles]);
 
-  // After React renders new markers (at off-screen left:-9999), position them before paint.
+  // Position markers before first paint after pane/list is ready
   useLayoutEffect(() => {
-    if (mapReady) updatePositions();
-  }, [vehicleList, mapReady, updatePositions]);
-
-  // Continuous rAF loop — updates marker positions every browser animation frame.
-  // actiontick fires less frequently than rAF, causing visible lag; rAF is guaranteed 60fps.
-  useEffect(() => {
-    if (!mapReady) return;
-    let frameId: number;
-    const tick = () => {
-      updatePositions();
-      frameId = requestAnimationFrame(tick);
-    };
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, [mapReady, updatePositions]);
+    if (mapReady && customPane) updatePositions();
+  }, [vehicleList, mapReady, customPane, updatePositions]);
 
   useEffect(() => {
     if (!mapReady || !mapInstance.current || !selectedVehicle?.lastState) return;
@@ -186,6 +190,68 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   const handleReload = () => {
     if (window.ymaps) window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
   };
+
+  const markerJSX = vehicleList.map((vehicle) => {
+    const price      = vehicle.baseTariff.pricePerMinCents / 100;
+    const isSelected = selectedVehicle?.id === vehicle.id;
+    return (
+      <div
+        key={vehicle.id}
+        ref={(el) => {
+          if (el) markerDivRefs.current.set(vehicle.id, el);
+          else    markerDivRefs.current.delete(vehicle.id);
+        }}
+        onClick={() => onSelectRef.current?.(vehicle)}
+        style={{
+          position: "absolute",
+          left: -9999,
+          top: -9999,
+          transform: "translate(-50%, calc(-100% - 6px))",
+          cursor: "pointer",
+          pointerEvents: "auto", // override parent pane's pointer-events:none
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            background: isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            border: `1.5px solid ${isSelected ? "rgba(167,139,250,0.80)" : "rgba(181,126,220,0.50)"}`,
+            borderRadius: "999px",
+            padding: "5px 13px",
+            fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
+            fontWeight: 700,
+            fontSize: 13,
+            lineHeight: 1,
+            color: isSelected ? "#ffffff" : "#4C1D95",
+            boxShadow: isSelected
+              ? "0 4px 16px rgba(109,40,217,0.40)"
+              : "0 4px 14px rgba(124,58,237,0.18)",
+            whiteSpace: "nowrap",
+            position: "relative",
+            userSelect: "none",
+          }}
+        >
+          {price.toFixed(0)}&nbsp;₽/мин
+          <span
+            style={{
+              position: "absolute",
+              bottom: -6,
+              left: "50%",
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "5px solid transparent",
+              borderRight: "5px solid transparent",
+              borderTop: `6px solid ${isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)"}`,
+            }}
+          />
+        </div>
+      </div>
+    );
+  });
 
   return (
     <>
@@ -215,71 +281,8 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
           </div>
         )}
 
-        {mapReady && vehicleList.map((vehicle) => {
-          const price      = vehicle.baseTariff.pricePerMinCents / 100;
-          const isSelected = selectedVehicle?.id === vehicle.id;
-
-          return (
-            <div
-              key={vehicle.id}
-              ref={(el) => {
-                if (el) markerDivRefs.current.set(vehicle.id, el);
-                else    markerDivRefs.current.delete(vehicle.id);
-              }}
-              onClick={() => onSelectRef.current?.(vehicle)}
-              style={{
-                position: "absolute",
-                // left/top start off-screen; useLayoutEffect sets real coords before paint.
-                // React never changes this in vdom, so direct DOM updates are never overwritten.
-                left: -9999,
-                top: -9999,
-                transform: "translate(-50%, calc(-100% - 6px))",
-                zIndex: 3000,
-                cursor: "pointer",
-                pointerEvents: "auto",
-              }}
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  background: isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)",
-                  backdropFilter: "blur(10px)",
-                  WebkitBackdropFilter: "blur(10px)",
-                  border: `1.5px solid ${isSelected ? "rgba(167,139,250,0.80)" : "rgba(181,126,220,0.50)"}`,
-                  borderRadius: "999px",
-                  padding: "5px 13px",
-                  fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  lineHeight: 1,
-                  color: isSelected ? "#ffffff" : "#4C1D95",
-                  boxShadow: isSelected
-                    ? "0 4px 16px rgba(109,40,217,0.40)"
-                    : "0 4px 14px rgba(124,58,237,0.18)",
-                  whiteSpace: "nowrap",
-                  position: "relative",
-                  userSelect: "none",
-                }}
-              >
-                {price.toFixed(0)}&nbsp;₽/мин
-                <span
-                  style={{
-                    position: "absolute",
-                    bottom: -6,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 0,
-                    height: 0,
-                    borderLeft: "5px solid transparent",
-                    borderRight: "5px solid transparent",
-                    borderTop: `6px solid ${isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)"}`,
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
+        {/* Markers live inside ymaps' inner-panes via portal — move with map tiles */}
+        {customPane && createPortal(markerJSX, customPane)}
 
         <div className="absolute bottom-4 left-4 z-[1000]">
           <div
