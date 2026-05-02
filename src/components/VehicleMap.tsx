@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { useSearchStore } from "@/lib/store";
@@ -18,56 +18,52 @@ interface Props {
   className?: string;
 }
 
-interface MarkerPos {
-  id: string;
-  x: number;
-  y: number;
-  vehicle: VehicleWithDetails;
-}
-
 export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, className }: Props) {
   const { mapCenter, zoom } = useSearchStore();
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
-
-  // Refs stay fresh inside DOM event listeners (added once, never re-added)
-  const onSelectRef = useRef(onVehicleSelect);
-  const markerPositionsRef = useRef<MarkerPos[]>([]);
+  const mapRef        = useRef<HTMLDivElement>(null);
+  const mapInstance   = useRef<any>(null);
+  const vehiclesRef   = useRef(vehicles);
+  const onSelectRef   = useRef(onVehicleSelect);
+  // Map from vehicle id → wrapper <div> rendered in the overlay
+  const markerDivRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
-  const [mapError, setMapError] = useState(false);
-  const [markerPositions, setMarkerPositions] = useState<MarkerPos[]>([]);
+  const [mapReady, setMapReady]         = useState(false);
+  const [mapError, setMapError]         = useState(false);
+  // Controls WHICH markers exist in the DOM (triggers re-render only when list changes)
+  const [vehicleList, setVehicleList]   = useState<VehicleWithDetails[]>([]);
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY;
 
+  useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
   useEffect(() => { onSelectRef.current = onVehicleSelect; }, [onVehicleSelect]);
 
-  const toPixel = (lat: number, lon: number): { x: number; y: number } => {
+  const toPixel = (lat: number, lon: number) => {
     const map = mapInstance.current;
     if (!map) return { x: -9999, y: -9999 };
     try {
-      const z   = map.getZoom();
+      const z    = map.getZoom();
       const proj = map.options.get("projection");
-      const gc  = map.getGlobalPixelCenter();
-      const sz  = map.container.getSize();
-      const gp  = proj.toGlobalPixels([lat, lon], z);
+      const gc   = map.getGlobalPixelCenter();
+      const sz   = map.container.getSize();
+      const gp   = proj.toGlobalPixels([lat, lon], z);
       return { x: gp[0] - gc[0] + sz[0] / 2, y: gp[1] - gc[1] + sz[1] / 2 };
     } catch { return { x: -9999, y: -9999 }; }
   };
 
+  // Positions are written directly to DOM — no React state, no re-render.
+  // This runs at 60 fps during map pan without causing any lag.
   const updatePositions = useCallback(() => {
     if (!mapInstance.current) return;
-    const positions: MarkerPos[] = [];
-    for (const v of vehicles) {
+    for (const v of vehiclesRef.current) {
       if (!v.lastState) continue;
+      const el = markerDivRefs.current.get(v.id);
+      if (!el) continue;
       const { x, y } = toPixel(v.lastState.lat, v.lastState.lon);
-      positions.push({ id: v.id, x, y, vehicle: v });
+      el.style.left = `${x}px`;
+      el.style.top  = `${y}px`;
     }
-    markerPositionsRef.current = positions; // keep ref fresh for DOM listener
-    setMarkerPositions(positions);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vehicles]);
+  }, []);
 
   const buildMap = useCallback((lat: number, lon: number, z: number) => {
     if (!mapRef.current || !window.ymaps) return;
@@ -75,8 +71,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       try { mapInstance.current.destroy(); } catch {}
       mapInstance.current = null;
       setMapReady(false);
-      setMarkerPositions([]);
-      markerPositionsRef.current = [];
+      markerDivRefs.current.clear();
     }
     try {
       const map = new window.ymaps.Map(mapRef.current, {
@@ -88,9 +83,8 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       setMapError(false);
       setMapReady(true);
 
+      // updatePositions touches only the DOM — safe to call every actiontick
       map.events.add(["actiontick", "boundschange", "sizechange"], updatePositions);
-
-
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
@@ -130,8 +124,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
         mapInstance.current = null;
       }
       setMapReady(false);
-      setMarkerPositions([]);
-      markerPositionsRef.current = [];
+      markerDivRefs.current.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptLoaded]);
@@ -158,10 +151,17 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptLoaded, buildMap, updatePositions]);
 
+  // Update the rendered list only when vehicles prop changes (infrequent)
   useEffect(() => {
-    if (mapReady) updatePositions();
-  }, [vehicles, mapReady, updatePositions]);
+    setVehicleList(vehicles.filter(v => !!v.lastState));
+  }, [vehicles]);
 
+  // After React renders new markers (at off-screen left:-9999), position them before paint.
+  // React keeps left:-9999 in the virtual DOM and never resets our direct updates,
+  // so subsequent re-renders (e.g. selectedVehicle change) don't move markers back.
+  useLayoutEffect(() => {
+    if (mapReady) updatePositions();
+  }, [vehicleList, mapReady, updatePositions]);
 
   useEffect(() => {
     if (!mapReady || !mapInstance.current || !selectedVehicle?.lastState) return;
@@ -189,7 +189,6 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       )}
 
       <div className={cn("relative w-full h-full min-h-[400px] rounded-xl overflow-hidden", className)}>
-        {/* ymaps renders inside this div; DOM clicks bubble up from events pane to here */}
         <div ref={mapRef} className="absolute inset-0" />
 
         {!scriptLoaded && !mapError && (
@@ -206,18 +205,24 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
           </div>
         )}
 
-        {/* Glass pill markers — events-pane lowered to 499, so z-index 500 + onClick works */}
-        {mapReady && markerPositions.map(({ id, x, y, vehicle }) => {
-          const price = vehicle.baseTariff.pricePerMinCents / 100;
+        {mapReady && vehicleList.map((vehicle) => {
+          const price      = vehicle.baseTariff.pricePerMinCents / 100;
           const isSelected = selectedVehicle?.id === vehicle.id;
+
           return (
             <div
-              key={id}
+              key={vehicle.id}
+              ref={(el) => {
+                if (el) markerDivRefs.current.set(vehicle.id, el);
+                else    markerDivRefs.current.delete(vehicle.id);
+              }}
               onClick={() => onSelectRef.current?.(vehicle)}
               style={{
                 position: "absolute",
-                left: x,
-                top: y,
+                // left/top start off-screen; useLayoutEffect sets real coords before paint.
+                // React never changes this in vdom, so direct DOM updates are never overwritten.
+                left: -9999,
+                top: -9999,
                 transform: "translate(-50%, calc(-100% - 6px))",
                 zIndex: 3000,
                 cursor: "pointer",
@@ -245,7 +250,6 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
                   whiteSpace: "nowrap",
                   position: "relative",
                   userSelect: "none",
-                  cursor: "pointer",
                 }}
               >
                 {price.toFixed(0)}&nbsp;₽/мин
