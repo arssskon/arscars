@@ -26,18 +26,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   if (action === "approve") {
-    const [vehicleClass, transmission, fuelType] = await Promise.all([
-      prisma.vehicleClass.findFirst({ where: { name: { equals: listing.vehicleClass, mode: "insensitive" } } }),
-      prisma.transmission.findFirst({ where: { name: { equals: TRANS_MAP[listing.transmission] ?? listing.transmission, mode: "insensitive" } } }),
-      prisma.fuelType.findFirst({ where: { name: { equals: FUEL_MAP[listing.fuelType] ?? listing.fuelType, mode: "insensitive" } } }),
-    ]);
+    const className = listing.vehicleClass;
+    const transName = TRANS_MAP[listing.transmission] ?? listing.transmission;
+    const fuelName  = FUEL_MAP[listing.fuelType] ?? listing.fuelType;
 
-    if (!vehicleClass || !transmission || !fuelType) {
-      return NextResponse.json(
-        { error: `Не найдены справочники: ${!vehicleClass ? "класс" : ""} ${!transmission ? "КПП" : ""} ${!fuelType ? "топливо" : ""}`.trim() },
-        { status: 422 }
-      );
-    }
+    const [vehicleClass, transmission, fuelType] = await Promise.all([
+      prisma.vehicleClass.upsert({ where: { name: className }, create: { name: className }, update: {} }),
+      prisma.transmission.upsert({ where: { name: transName }, create: { name: transName }, update: {} }),
+      prisma.fuelType.upsert({ where: { name: fuelName }, create: { name: fuelName }, update: {} }),
+    ]);
 
     const pricePerMinCents = Math.round(Number(listing.pricePerMinute) * 100);
     const minChargeCents = Math.round(Number(listing.minCharge) * 100);
