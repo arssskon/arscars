@@ -83,8 +83,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       setMapError(false);
       setMapReady(true);
 
-      // updatePositions touches only the DOM — safe to call every actiontick
-      map.events.add(["actiontick", "boundschange", "sizechange"], updatePositions);
+      map.events.add("sizechange", updatePositions);
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
@@ -157,11 +156,22 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   }, [vehicles]);
 
   // After React renders new markers (at off-screen left:-9999), position them before paint.
-  // React keeps left:-9999 in the virtual DOM and never resets our direct updates,
-  // so subsequent re-renders (e.g. selectedVehicle change) don't move markers back.
   useLayoutEffect(() => {
     if (mapReady) updatePositions();
   }, [vehicleList, mapReady, updatePositions]);
+
+  // Continuous rAF loop — updates marker positions every browser animation frame.
+  // actiontick fires less frequently than rAF, causing visible lag; rAF is guaranteed 60fps.
+  useEffect(() => {
+    if (!mapReady) return;
+    let frameId: number;
+    const tick = () => {
+      updatePositions();
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [mapReady, updatePositions]);
 
   useEffect(() => {
     if (!mapReady || !mapInstance.current || !selectedVehicle?.lastState) return;
