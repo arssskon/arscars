@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassPanel } from "@/components/ui/glass/GlassPanel";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { MapPicker } from "@/components/ui/MapPicker";
 import { useAuthStore } from "@/lib/store";
 import { useToast } from "@/components/admin/Toast";
 import { Plus, X } from "lucide-react";
@@ -296,17 +297,14 @@ export default function OwnerNewPage() {
                       <input className={inputCls} placeholder="Город, улица, дом"
                         value={form.address} onChange={(e) => set("address", e.target.value)} />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Широта</Label>
-                        <input className={inputCls} type="number" step="any" placeholder="55.751244"
-                          value={form.latitude} onChange={(e) => set("latitude", e.target.value)} />
-                      </div>
-                      <div>
-                        <Label>Долгота</Label>
-                        <input className={inputCls} type="number" step="any" placeholder="37.618423"
-                          value={form.longitude} onChange={(e) => set("longitude", e.target.value)} />
-                      </div>
+                    <div>
+                      <Label>Местоположение на карте</Label>
+                      <MapPicker
+                        lat={form.latitude}
+                        lon={form.longitude}
+                        onChange={(lat, lon) => setForm((p) => ({ ...p, latitude: lat, longitude: lon }))}
+                        onAddressChange={(addr) => setForm((p) => ({ ...p, address: p.address || addr }))}
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>

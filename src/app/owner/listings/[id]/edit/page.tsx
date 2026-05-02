@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassPanel } from "@/components/ui/glass/GlassPanel";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
+import { MapPicker } from "@/components/ui/MapPicker";
 import { useAuthStore } from "@/lib/store";
 import { useToast } from "@/components/admin/Toast";
 import { Plus, X } from "lucide-react";
@@ -208,9 +209,14 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
                       <div><Label>Мин. ₽ *</Label><input className={inputCls} type="number" min={10} value={form.minCharge} onChange={(e) => set("minCharge", e.target.value)} /></div>
                     </div>
                     <div><Label>Адрес *</Label><input className={inputCls} value={form.address} onChange={(e) => set("address", e.target.value)} /></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Широта</Label><input className={inputCls} type="number" step="any" value={form.latitude} onChange={(e) => set("latitude", e.target.value)} /></div>
-                      <div><Label>Долгота</Label><input className={inputCls} type="number" step="any" value={form.longitude} onChange={(e) => set("longitude", e.target.value)} /></div>
+                    <div>
+                      <Label>Местоположение на карте</Label>
+                      <MapPicker
+                        lat={form.latitude}
+                        lon={form.longitude}
+                        onChange={(lat, lon) => setForm((p) => p ? { ...p, latitude: lat, longitude: lon } : p)}
+                        onAddressChange={(addr) => setForm((p) => p ? { ...p, address: p.address || addr } : p)}
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>Доступно с</Label><input className={inputCls} type="date" value={form.availableFrom} onChange={(e) => set("availableFrom", e.target.value)} /></div>
