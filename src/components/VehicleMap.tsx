@@ -210,6 +210,17 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
     } catch {}
   }, [selectedVehicle, mapReady]);
 
+  const prevCenterRef = useRef(mapCenter);
+  useEffect(() => {
+    if (!mapReady || !mapInstance.current) return;
+    if (prevCenterRef.current.lat === mapCenter.lat && prevCenterRef.current.lon === mapCenter.lon) return;
+    prevCenterRef.current = mapCenter;
+    try {
+      mapInstance.current.panTo([mapCenter.lat, mapCenter.lon], { flying: true });
+      mapInstance.current.setZoom(zoom, { smooth: true });
+    } catch {}
+  }, [mapCenter, zoom, mapReady]);
+
   const handleReload = () => {
     if (window.ymaps) window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
   };

@@ -45,6 +45,7 @@ interface SearchState {
   };
   setFilters: (f: Partial<SearchState["filters"]>) => void;
   setSelectedVehicle: (v: VehicleWithDetails | null) => void;
+  setMapCenter: (c: { lat: number; lon: number }, zoom?: number) => void;
   setZoom: (z: number) => void;
   resetFilters: () => void;
 }
@@ -56,6 +57,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   filters: { location: { lat: 55.1644, lon: 61.4368, address: "Челябинск" } },
   setFilters: (f) => set((s) => ({ filters: { ...s.filters, ...f } })),
   setSelectedVehicle: (v) => set({ selectedVehicle: v }),
+  setMapCenter: (c, zoom) => set((s) => ({ mapCenter: c, zoom: zoom ?? s.zoom })),
   setZoom: (z) => set({ zoom: z }),
-  resetFilters: () => set({ filters: { location: { lat: 55.1644, lon: 61.4368, address: "Челябинск" } } }),
+  resetFilters: () => set({ filters: { location: { lat: 55.1644, lon: 61.4368, address: "Челябинск" } }, mapCenter: { lat: 55.1644, lon: 61.4368 }, zoom: 11 }),
 }));

@@ -22,12 +22,13 @@ type View = "split" | "list" | "map";
 
 export default function SearchPage() {
   const [view, setView] = useState<View>("split");
-  const { filters, setFilters, selectedVehicle, setSelectedVehicle, resetFilters } = useSearchStore();
+  const { filters, setFilters, selectedVehicle, setSelectedVehicle, resetFilters, setMapCenter } = useSearchStore();
   const [address, setAddress] = useState(filters.location?.address || "Челябинск");
   const [selClass, setSelClass] = useState<number[]>(filters.vehicleClassIds || []);
   const [selTrans, setSelTrans] = useState<number[]>(filters.transmissionIds || []);
   const [selFuel, setSelFuel] = useState<number[]>(filters.fuelTypeIds || []);
   const [showFilters, setShowFilters] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [allVehicles, setAllVehicles] = useState<VehicleWithDetails[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
 
@@ -70,12 +71,36 @@ export default function SearchPage() {
 
   const handleSearch = () => {
     setFilters({
-      location: { ...filters.location!, address },
       vehicleClassIds: selClass.length ? selClass : undefined,
       transmissionIds: selTrans.length ? selTrans : undefined,
       fuelTypeIds: selFuel.length ? selFuel : undefined,
     });
+
+    const q = address.trim();
+    if (!q) return;
+
+    const doGeocode = () => {
+      setGeocoding(true);
+      window.ymaps
+        .geocode(q, { results: 1 })
+        .then((res: any) => {
+          const obj = res.geoObjects.get(0);
+          if (!obj) return;
+          const [lat, lon] = obj.geometry.getCoordinates() as [number, number];
+          const bounds = obj.properties.get("boundedBy") as [[number,number],[number,number]] | undefined;
+          const newZoom = bounds ? 12 : 14;
+          setMapCenter({ lat, lon }, newZoom);
+          setFilters({ location: { lat, lon, address: q } });
+        })
+        .catch(() => {})
+        .finally(() => setGeocoding(false));
+    };
+
+    if (typeof window !== "undefined" && window.ymaps?.geocode) {
+      window.ymaps.ready(doGeocode);
+    }
   };
+
   const handleReset = () => {
     setSelClass([]); setSelTrans([]); setSelFuel([]);
     setAddress("Челябинск");
@@ -99,9 +124,10 @@ export default function SearchPage() {
           <div className="relative flex-1">
             <MapPin className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-lavender-400" />
             <Input
-              placeholder="Введите адрес"
+              placeholder="Введите город или адрес"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="h-12 pl-10 bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
             />
           </div>
@@ -187,9 +213,9 @@ export default function SearchPage() {
             </PopoverContent>
           </Popover>
 
-          <GlassButton variant="primary" className="h-12 rounded-xl" onClick={handleSearch}>
+          <GlassButton variant="primary" className="h-12 rounded-xl" onClick={handleSearch} disabled={geocoding}>
             <Search className="h-4 w-4" />
-            Найти
+            {geocoding ? "Поиск…" : "Найти"}
           </GlassButton>
         </div>
       </div>
