@@ -19,10 +19,10 @@ const FUELS = [
 ];
 
 const inputCls =
-  "w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition";
+  "w-full bg-white/50 backdrop-blur border border-lavender-200 text-[#1A1035] placeholder-[#9CA3AF] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400 transition";
 
 const selectCls =
-  "w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-white/30 appearance-none cursor-pointer [&>option]:bg-[#4C1D95] [&>option]:text-white";
+  "w-full bg-white/50 backdrop-blur border border-lavender-200 text-[#1A1035] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lavender-400/40 appearance-none cursor-pointer";
 
 interface FormData {
   make: string; model: string; year: string; color: string; plateNumber: string;
@@ -111,7 +111,7 @@ export default function OwnerNewPage() {
   };
 
   const Label = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-sm font-medium text-white/80 mb-1">{children}</label>
+    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-primary)" }}>{children}</label>
   );
 
   return (
@@ -128,16 +128,16 @@ export default function OwnerNewPage() {
                     ? "bg-lavender-400 text-white shadow-lg shadow-lavender-400/30"
                     : s < step
                     ? "bg-lavender-200 text-lavender-800"
-                    : "bg-white/20 text-white/50"
+                    : "bg-lavender-100/70 text-lavender-300"
                 }`}
               >
                 {s}
               </div>
-              {s < 3 && <div className={`h-0.5 w-8 rounded ${s < step ? "bg-lavender-400" : "bg-white/20"}`} />}
+              {s < 3 && <div className={`h-0.5 w-8 rounded ${s < step ? "bg-lavender-400" : "bg-lavender-200/60"}`} />}
             </div>
           ))}
         </div>
-        <p className="text-center text-white/60 text-xs mb-4">Шаг {step} из 3</p>
+        <p className="text-center text-sm mb-4" style={{ color: "var(--text-secondary)" }}>Шаг {step} из 3</p>
 
         <div className="overflow-hidden">
           <AnimatePresence mode="wait" custom={dir}>
@@ -154,7 +154,7 @@ export default function OwnerNewPage() {
 
                 {step === 1 && (
                   <>
-                    <h2 className="text-xl font-bold text-white mb-2">Об автомобиле</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Об автомобиле</h2>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Марка *</Label>
@@ -221,7 +221,7 @@ export default function OwnerNewPage() {
 
                 {step === 2 && (
                   <>
-                    <h2 className="text-xl font-bold text-white mb-2">Фото и описание</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Фото и описание</h2>
                     <div>
                       <Label>Фото автомобиля (URL) *</Label>
                       <div className="space-y-2">
@@ -239,7 +239,7 @@ export default function OwnerNewPage() {
                         ))}
                         {form.photoUrls.length < 6 && (
                           <button onClick={addPhoto}
-                            className="flex items-center gap-1 text-sm text-lavender-300 hover:text-white transition">
+                            className="flex items-center gap-1 text-sm text-lavender-600 hover:text-lavender-800 transition">
                             <Plus className="h-4 w-4" /> Добавить фото
                           </button>
                         )}
@@ -254,7 +254,7 @@ export default function OwnerNewPage() {
                           value={form.description}
                           onChange={(e) => set("description", e.target.value)}
                         />
-                        <span className="absolute bottom-2 right-3 text-white/30 text-xs">
+                        <span className="absolute bottom-2 right-3 text-lavender-300 text-xs">
                           {form.description.length}/500
                         </span>
                       </div>
@@ -278,7 +278,7 @@ export default function OwnerNewPage() {
 
                 {step === 3 && (
                   <>
-                    <h2 className="text-xl font-bold text-white mb-2">Цена и местоположение</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Цена и местоположение</h2>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Цена за минуту, ₽ *</Label>

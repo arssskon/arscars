@@ -17,9 +17,9 @@ const FUELS = [
 ];
 
 const inputCls =
-  "w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition";
+  "w-full bg-white/50 backdrop-blur border border-lavender-200 text-[#1A1035] placeholder-[#9CA3AF] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400 transition";
 const selectCls =
-  "w-full bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-white/30 appearance-none cursor-pointer [&>option]:bg-[#4C1D95] [&>option]:text-white";
+  "w-full bg-white/50 backdrop-blur border border-lavender-200 text-[#1A1035] rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-lavender-400/40 appearance-none cursor-pointer";
 
 interface FormData {
   make: string; model: string; year: string; color: string; plateNumber: string;
@@ -126,7 +126,7 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
   };
 
   const Label = ({ children }: { children: React.ReactNode }) => (
-    <label className="block text-sm font-medium text-white/80 mb-1">{children}</label>
+    <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-primary)" }}>{children}</label>
   );
 
   return (
@@ -137,13 +137,13 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
             <div key={s} className="flex items-center gap-2">
               <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                 s === step ? "bg-lavender-400 text-white shadow-lg shadow-lavender-400/30"
-                  : s < step ? "bg-lavender-200 text-lavender-800" : "bg-white/20 text-white/50"
+                  : s < step ? "bg-lavender-200 text-lavender-800" : "bg-lavender-100/70 text-lavender-300"
               }`}>{s}</div>
-              {s < 3 && <div className={`h-0.5 w-8 rounded ${s < step ? "bg-lavender-400" : "bg-white/20"}`} />}
+              {s < 3 && <div className={`h-0.5 w-8 rounded ${s < step ? "bg-lavender-400" : "bg-lavender-200/60"}`} />}
             </div>
           ))}
         </div>
-        <p className="text-center text-white/60 text-xs mb-4">Шаг {step} из 3 · Редактирование</p>
+        <p className="text-center text-sm mb-4" style={{ color: "var(--text-secondary)" }}>Шаг {step} из 3 · Редактирование</p>
 
         <div className="overflow-hidden">
           <AnimatePresence mode="wait" custom={dir}>
@@ -154,7 +154,7 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
 
                 {step === 1 && (
                   <>
-                    <h2 className="text-xl font-bold text-white mb-2">Об автомобиле</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Об автомобиле</h2>
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>Марка *</Label><input className={inputCls} value={form.make} onChange={(e) => set("make", e.target.value)} /></div>
                       <div><Label>Модель *</Label><input className={inputCls} value={form.model} onChange={(e) => set("model", e.target.value)} /></div>
@@ -175,7 +175,7 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
 
                 {step === 2 && (
                   <>
-                    <h2 className="text-xl font-bold text-white mb-2">Фото и описание</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Фото и описание</h2>
                     <div>
                       <Label>Фото (URL) *</Label>
                       <div className="space-y-2">
@@ -185,7 +185,7 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
                             {i > 0 && <button onClick={() => removePhoto(i)} className="text-white/40 hover:text-red-400 transition"><X className="h-4 w-4" /></button>}
                           </div>
                         ))}
-                        {form.photoUrls.length < 6 && <button onClick={addPhoto} className="flex items-center gap-1 text-sm text-lavender-300 hover:text-white transition"><Plus className="h-4 w-4" /> Добавить фото</button>}
+                        {form.photoUrls.length < 6 && <button onClick={addPhoto} className="flex items-center gap-1 text-sm text-lavender-600 hover:text-lavender-800 transition"><Plus className="h-4 w-4" /> Добавить фото</button>}
                       </div>
                     </div>
                     <div>
@@ -202,7 +202,7 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
 
                 {step === 3 && (
                   <>
-                    <h2 className="text-xl font-bold text-white mb-2">Цена и местоположение</h2>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Цена и местоположение</h2>
                     <div className="grid grid-cols-2 gap-3">
                       <div><Label>₽/мин *</Label><input className={inputCls} type="number" min={1} value={form.pricePerMinute} onChange={(e) => set("pricePerMinute", e.target.value)} /></div>
                       <div><Label>Мин. ₽ *</Label><input className={inputCls} type="number" min={10} value={form.minCharge} onChange={(e) => set("minCharge", e.target.value)} /></div>

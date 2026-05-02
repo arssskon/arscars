@@ -124,25 +124,29 @@ export default function HomePage() {
                 500+ авто · 5 классов · от 3 ₽/мин. Бронируй онлайн за 2 минуты.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
-                <Link href="/search">
-                  <GlassButton variant="primary" size="lg">
-                    <MapPin className="h-5 w-5" />
-                    Найти автомобиль
-                  </GlassButton>
-                </Link>
-                <Link href="/about">
-                  <GlassButton variant="ghost" size="lg">
-                    Смотреть тарифы
-                    <ArrowRight className="h-5 w-5" />
-                  </GlassButton>
-                </Link>
-                <Link href="/owner/new" className="sm:w-auto w-full">
-                  <GlassButton variant="outline" size="lg" className="w-full sm:w-auto">
-                    <CarFront className="h-[18px] w-[18px]" />
-                    Сдать машину в аренду
-                  </GlassButton>
-                </Link>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link href="/search">
+                    <GlassButton variant="primary" size="lg">
+                      <MapPin className="h-5 w-5" />
+                      Найти автомобиль
+                    </GlassButton>
+                  </Link>
+                  <Link href="/about">
+                    <GlassButton variant="ghost" size="lg">
+                      Смотреть тарифы
+                      <ArrowRight className="h-5 w-5" />
+                    </GlassButton>
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/owner/new">
+                    <GlassButton variant="ghost" size="lg">
+                      <CarFront className="h-[18px] w-[18px]" />
+                      Сдать машину в аренду
+                    </GlassButton>
+                  </Link>
+                </div>
               </div>
             </motion.div>
 
