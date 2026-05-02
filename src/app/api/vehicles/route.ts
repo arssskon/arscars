@@ -30,10 +30,12 @@ export async function GET(req: NextRequest) {
           lastState: true,
         },
       }),
-      prisma.ownerListing.findMany({
-        where: { status: "APPROVED", vehicleId: { not: null } },
-        select: { vehicleId: true },
-      }),
+      prisma.ownerListing
+        .findMany({
+          where: { status: "APPROVED", vehicleId: { not: null } },
+          select: { vehicleId: true },
+        })
+        .catch(() => [] as { vehicleId: string | null }[]),
     ]);
 
     const ownerVehicleIds = new Set(ownerListings.map((l) => l.vehicleId as string));
