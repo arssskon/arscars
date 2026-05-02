@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { VehicleCard } from "@/components/VehicleCard";
@@ -10,7 +9,7 @@ import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { filterVehicles, calculateDistance, vehicleClasses, transmissions, fuelTypes } from "@/lib/mock-data";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { useSearchStore } from "@/lib/store";
-import { List, Map, SlidersHorizontal, MapPin, Search } from "lucide-react";
+import { List, Map, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -22,13 +21,11 @@ type View = "split" | "list" | "map";
 
 export default function SearchPage() {
   const [view, setView] = useState<View>("split");
-  const { filters, setFilters, selectedVehicle, setSelectedVehicle, resetFilters, setMapCenter } = useSearchStore();
-  const [address, setAddress] = useState(filters.location?.address || "Челябинск");
+  const { filters, setFilters, selectedVehicle, setSelectedVehicle, resetFilters } = useSearchStore();
   const [selClass, setSelClass] = useState<number[]>(filters.vehicleClassIds || []);
   const [selTrans, setSelTrans] = useState<number[]>(filters.transmissionIds || []);
   const [selFuel, setSelFuel] = useState<number[]>(filters.fuelTypeIds || []);
   const [showFilters, setShowFilters] = useState(false);
-  const [geocoding, setGeocoding] = useState(false);
   const [allVehicles, setAllVehicles] = useState<VehicleWithDetails[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(true);
 
@@ -69,125 +66,112 @@ export default function SearchPage() {
   const toggle = (id: number, arr: number[], set: (a: number[]) => void) =>
     set(arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
 
-  const handleSearch = () => {
+  const applyFilters = () => {
     setFilters({
       vehicleClassIds: selClass.length ? selClass : undefined,
       transmissionIds: selTrans.length ? selTrans : undefined,
       fuelTypeIds: selFuel.length ? selFuel : undefined,
     });
-
-    const q = address.trim();
-    if (!q) return;
-
-    const doGeocode = () => {
-      setGeocoding(true);
-      window.ymaps
-        .geocode(q, { results: 1 })
-        .then((res: any) => {
-          const obj = res.geoObjects.get(0);
-          if (!obj) return;
-          const [lat, lon] = obj.geometry.getCoordinates() as [number, number];
-          const bounds = obj.properties.get("boundedBy") as [[number, number], [number, number]] | undefined;
-          const newZoom = bounds ? 12 : 14;
-          setMapCenter({ lat, lon }, newZoom);
-          setFilters({ location: { lat, lon, address: q } });
-        })
-        .catch(() => {})
-        .finally(() => setGeocoding(false));
-    };
-
-    if (typeof window !== "undefined" && window.ymaps?.geocode) {
-      window.ymaps.ready(doGeocode);
-    }
+    setShowFilters(false);
   };
 
   const handleReset = () => {
     setSelClass([]); setSelTrans([]); setSelFuel([]);
-    setAddress("Челябинск");
     resetFilters();
   };
 
-  const filtersPopover = (
-    <Popover open={showFilters} onOpenChange={setShowFilters}>
-      <PopoverTrigger asChild>
-        <div>
-          <GlassButton variant="outline" size="sm" className="h-9 rounded-xl">
-            <SlidersHorizontal className="h-4 w-4" />
-            Фильтры
-            {activeCount > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-lavender-400 text-white text-xs font-semibold leading-none">
-                {activeCount}
-              </span>
-            )}
-          </GlassButton>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-4 glass border-0 rounded-2xl" align="start">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-semibold text-[var(--text-primary)]">Фильтры</h4>
-            <GlassButton variant="ghost" size="sm" onClick={handleReset} className="text-xs h-7 px-3">
-              Сбросить
+  const panelHeader = (
+    <div
+      className="flex items-center justify-between px-4 py-3 border-b"
+      style={{ borderColor: "rgba(181, 126, 220, 0.15)" }}
+    >
+      <span className="font-medium text-[var(--text-primary)]">
+        {loadingVehicles ? "Загрузка..." : `${filtered.length} автомобилей`}
+      </span>
+      <div className="flex gap-1 items-center">
+        <Popover open={showFilters} onOpenChange={setShowFilters}>
+          <PopoverTrigger asChild>
+            <GlassButton variant="outline" size="sm" className="h-9 rounded-xl">
+              <SlidersHorizontal className="h-4 w-4" />
+              Фильтры
+              {activeCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-lavender-400 text-white text-xs font-semibold leading-none">
+                  {activeCount}
+                </span>
+              )}
             </GlassButton>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-lavender-800 uppercase tracking-wide">Класс</p>
-            <div className="flex flex-wrap gap-2">
-              {vehicleClasses.map((c) => (
-                <Badge
-                  key={c.id}
-                  variant={selClass.includes(c.id) ? "default" : "outline"}
-                  className="cursor-pointer"
-                  style={selClass.includes(c.id) ? { background: "#B57EDC" } : {}}
-                  onClick={() => toggle(c.id, selClass, setSelClass)}
-                >
-                  {classLabels[c.name]}
-                </Badge>
-              ))}
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-4 glass border-0 rounded-2xl" align="end">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="font-semibold text-[var(--text-primary)]">Фильтры</h4>
+                <GlassButton variant="ghost" size="sm" onClick={handleReset} className="text-xs h-7 px-3">
+                  Сбросить
+                </GlassButton>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-lavender-800 uppercase tracking-wide">Класс</p>
+                <div className="flex flex-wrap gap-2">
+                  {vehicleClasses.map((c) => (
+                    <Badge
+                      key={c.id}
+                      variant={selClass.includes(c.id) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      style={selClass.includes(c.id) ? { background: "#B57EDC" } : {}}
+                      onClick={() => toggle(c.id, selClass, setSelClass)}
+                    >
+                      {classLabels[c.name]}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-lavender-800 uppercase tracking-wide">Коробка</p>
+                <div className="flex flex-wrap gap-2">
+                  {transmissions.map((t) => (
+                    <Badge
+                      key={t.id}
+                      variant={selTrans.includes(t.id) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      style={selTrans.includes(t.id) ? { background: "#B57EDC" } : {}}
+                      onClick={() => toggle(t.id, selTrans, setSelTrans)}
+                    >
+                      {transLabels[t.name]}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-lavender-800 uppercase tracking-wide">Топливо</p>
+                <div className="flex flex-wrap gap-2">
+                  {fuelTypes.map((f) => (
+                    <Badge
+                      key={f.id}
+                      variant={selFuel.includes(f.id) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      style={selFuel.includes(f.id) ? { background: "#B57EDC" } : {}}
+                      onClick={() => toggle(f.id, selFuel, setSelFuel)}
+                    >
+                      {fuelLabels[f.name]}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <GlassButton variant="primary" className="w-full rounded-xl" onClick={applyFilters}>
+                Применить
+              </GlassButton>
             </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-lavender-800 uppercase tracking-wide">Коробка</p>
-            <div className="flex flex-wrap gap-2">
-              {transmissions.map((t) => (
-                <Badge
-                  key={t.id}
-                  variant={selTrans.includes(t.id) ? "default" : "outline"}
-                  className="cursor-pointer"
-                  style={selTrans.includes(t.id) ? { background: "#B57EDC" } : {}}
-                  onClick={() => toggle(t.id, selTrans, setSelTrans)}
-                >
-                  {transLabels[t.name]}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-lavender-800 uppercase tracking-wide">Топливо</p>
-            <div className="flex flex-wrap gap-2">
-              {fuelTypes.map((f) => (
-                <Badge
-                  key={f.id}
-                  variant={selFuel.includes(f.id) ? "default" : "outline"}
-                  className="cursor-pointer"
-                  style={selFuel.includes(f.id) ? { background: "#B57EDC" } : {}}
-                  onClick={() => toggle(f.id, selFuel, setSelFuel)}
-                >
-                  {fuelLabels[f.name]}
-                </Badge>
-              ))}
-            </div>
-          </div>
-          <GlassButton
-            variant="primary"
-            className="w-full rounded-xl"
-            onClick={() => { handleSearch(); setShowFilters(false); }}
-          >
-            Применить
-          </GlassButton>
-        </div>
-      </PopoverContent>
-    </Popover>
+          </PopoverContent>
+        </Popover>
+
+        <GlassButton variant={view === "split" ? "primary" : "ghost"} size="sm" className="h-8 w-8 p-0 rounded-full" onClick={() => setView("split")}>
+          <SlidersHorizontal className="h-4 w-4" />
+        </GlassButton>
+        <GlassButton variant={view === "list" ? "primary" : "ghost"} size="sm" className="h-8 w-8 p-0 rounded-full" onClick={() => setView("list")}>
+          <List className="h-4 w-4" />
+        </GlassButton>
+      </div>
+    </div>
   );
 
   return (
@@ -195,37 +179,19 @@ export default function SearchPage() {
 
       {/* Mobile bar */}
       <div
-        className="md:hidden border-b px-4 py-2 space-y-2"
+        className="md:hidden flex items-center justify-between border-b px-4 py-2"
         style={{ background: "rgba(240, 236, 248, 0.75)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "rgba(181, 126, 220, 0.15)" }}
       >
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-lavender-400" />
-            <Input
-              placeholder="Город или адрес"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              className="h-9 pl-9 text-sm bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
-            />
-          </div>
-          <GlassButton variant="primary" size="sm" className="h-9 px-3 rounded-xl" onClick={handleSearch} disabled={geocoding}>
-            <Search className="h-4 w-4" />
+        <span className="text-sm font-medium text-[var(--text-primary)]">
+          {loadingVehicles ? "Загрузка..." : `${filtered.length} авто`}
+        </span>
+        <div className="flex gap-1">
+          <GlassButton variant={view === "list" ? "primary" : "ghost"} size="sm" className="h-8 w-8 p-0 rounded-full" onClick={() => setView("list")}>
+            <List className="h-4 w-4" />
           </GlassButton>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-[var(--text-primary)]">
-            {loadingVehicles ? "Загрузка..." : `${filtered.length} авто`}
-          </span>
-          <div className="flex gap-1">
-            {filtersPopover}
-            <GlassButton variant={view === "list" ? "primary" : "ghost"} size="sm" className="h-9 w-9 p-0 rounded-full" onClick={() => setView("list")}>
-              <List className="h-4 w-4" />
-            </GlassButton>
-            <GlassButton variant={view === "map" ? "primary" : "ghost"} size="sm" className="h-9 w-9 p-0 rounded-full" onClick={() => setView("map")}>
-              <Map className="h-4 w-4" />
-            </GlassButton>
-          </div>
+          <GlassButton variant={view === "map" ? "primary" : "ghost"} size="sm" className="h-8 w-8 p-0 rounded-full" onClick={() => setView("map")}>
+            <Map className="h-4 w-4" />
+          </GlassButton>
         </div>
       </div>
 
@@ -238,44 +204,7 @@ export default function SearchPage() {
           )}
           style={{ background: "rgba(240, 236, 248, 0.5)", borderRight: "1px solid rgba(181, 126, 220, 0.15)" }}
         >
-          {/* Desktop panel header */}
-          <div
-            className="hidden md:flex flex-col gap-2 px-4 py-3 border-b"
-            style={{ borderColor: "rgba(181, 126, 220, 0.15)" }}
-          >
-            {/* Address search row */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-lavender-400" />
-                <Input
-                  placeholder="Город или адрес"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="h-9 pl-9 text-sm bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
-                />
-              </div>
-              <GlassButton variant="primary" size="sm" className="h-9 px-3 rounded-xl" onClick={handleSearch} disabled={geocoding}>
-                <Search className="h-4 w-4" />
-                {geocoding ? "Поиск…" : "Найти"}
-              </GlassButton>
-            </div>
-            {/* Count + filters + view toggles row */}
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-[var(--text-primary)]">
-                {loadingVehicles ? "Загрузка..." : `${filtered.length} автомобилей`}
-              </span>
-              <div className="flex gap-1 items-center">
-                {filtersPopover}
-                <GlassButton variant={view === "split" ? "primary" : "ghost"} size="sm" className="h-8 w-8 p-0 rounded-full" onClick={() => setView("split")}>
-                  <SlidersHorizontal className="h-4 w-4" />
-                </GlassButton>
-                <GlassButton variant={view === "list" ? "primary" : "ghost"} size="sm" className="h-8 w-8 p-0 rounded-full" onClick={() => setView("list")}>
-                  <List className="h-4 w-4" />
-                </GlassButton>
-              </div>
-            </div>
-          </div>
+          <div className="hidden md:block">{panelHeader}</div>
 
           <ScrollArea className="flex-1">
             <div
