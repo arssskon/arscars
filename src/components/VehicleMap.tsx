@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Script from "next/script";
 import type { VehicleWithDetails } from "@/lib/mock-data";
 import { useSearchStore } from "@/lib/store";
@@ -21,59 +20,28 @@ interface Props {
 
 export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, className }: Props) {
   const { mapCenter, zoom } = useSearchStore();
-  const mapRef        = useRef<HTMLDivElement>(null);
-  const mapInstance   = useRef<any>(null);
-  const vehiclesRef   = useRef(vehicles);
-  const onSelectRef   = useRef(onVehicleSelect);
-  const markerDivRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const mapRef          = useRef<HTMLDivElement>(null);
+  const mapInstance     = useRef<any>(null);
+  const placemarkRefs   = useRef<any[]>([]);
+  const vehiclesRef     = useRef(vehicles);
+  const onSelectRef     = useRef(onVehicleSelect);
 
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [mapReady, setMapReady]         = useState(false);
   const [mapError, setMapError]         = useState(false);
-  const [vehicleList, setVehicleList]   = useState<VehicleWithDetails[]>([]);
-  // Custom pane div injected inside ymaps' inner-panes —
-  // participates in the same CSS transform ymaps uses for smooth pan/zoom
-  const [customPane, setCustomPane]     = useState<HTMLElement | null>(null);
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY;
 
   useEffect(() => { vehiclesRef.current = vehicles; }, [vehicles]);
   useEffect(() => { onSelectRef.current = onVehicleSelect; }, [onVehicleSelect]);
 
-  const toPixel = (lat: number, lon: number) => {
-    const map = mapInstance.current;
-    if (!map) return { x: -9999, y: -9999 };
-    try {
-      const z    = map.getZoom();
-      const proj = map.options.get("projection");
-      const gc   = map.getGlobalPixelCenter();
-      const sz   = map.container.getSize();
-      const gp   = proj.toGlobalPixels([lat, lon], z);
-      return { x: gp[0] - gc[0] + sz[0] / 2, y: gp[1] - gc[1] + sz[1] / 2 };
-    } catch { return { x: -9999, y: -9999 }; }
-  };
-
-  // Write positions directly to DOM — no React state, no re-render
-  const updatePositions = useCallback(() => {
-    if (!mapInstance.current) return;
-    for (const v of vehiclesRef.current) {
-      if (!v.lastState) continue;
-      const el = markerDivRefs.current.get(v.id);
-      if (!el) continue;
-      const { x, y } = toPixel(v.lastState.lat, v.lastState.lon);
-      el.style.left = `${x}px`;
-      el.style.top  = `${y}px`;
-    }
-  }, []);
-
   const buildMap = useCallback((lat: number, lon: number, z: number) => {
     if (!mapRef.current || !window.ymaps) return;
     if (mapInstance.current) {
       try { mapInstance.current.destroy(); } catch {}
       mapInstance.current = null;
+      placemarkRefs.current = [];
       setMapReady(false);
-      setCustomPane(null);
-      markerDivRefs.current.clear();
     }
     try {
       const map = new window.ymaps.Map(mapRef.current, {
@@ -85,22 +53,29 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       setMapError(false);
       setMapReady(true);
 
-      // Inject our pane inside ymaps' inner-panes.
-      // ymaps applies CSS transform to inner-panes during pan/zoom —
-      // our markers inside it move with tiles automatically (zero lag).
-      requestAnimationFrame(() => {
-        if (!mapRef.current) return;
-        const innerPanes = mapRef.current.querySelector<HTMLElement>('[class*="inner-panes"]');
-        if (!innerPanes) return;
-        const pane = document.createElement("div");
-        pane.style.cssText = "position:absolute;top:0;left:0;z-index:2600;pointer-events:none;";
-        innerPanes.appendChild(pane);
-        setCustomPane(pane);
-      });
+      // Click handler: ymaps events-pane captures ALL clicks.
+      // We hit-test in global-pixel space — no z-index tricks needed.
+      map.events.add("click", (e: any) => {
+        const clickCoords: [number, number] = e.get("coords");
+        if (!clickCoords) return;
+        try {
+          const zoom = map.getZoom();
+          const proj = map.options.get("projection");
+          const clickGP = proj.toGlobalPixels(clickCoords, zoom);
 
-      // Reposition markers after pan/zoom settles (CSS transform is removed by ymaps)
-      map.events.add("boundschange", () => requestAnimationFrame(updatePositions));
-      map.events.add("sizechange", updatePositions);
+          for (const v of vehiclesRef.current) {
+            if (!v.lastState) continue;
+            const vGP = proj.toGlobalPixels([v.lastState.lat, v.lastState.lon], zoom);
+            const dx = clickGP[0] - vGP[0]; // horizontal offset
+            const dy = clickGP[1] - vGP[1]; // vertical offset (positive = click below anchor)
+            // Pill is above anchor: dy ∈ [-36, -4], dx ∈ [-55, 55]
+            if (Math.abs(dx) <= 55 && dy >= -36 && dy <= -4) {
+              onSelectRef.current?.(v);
+              return;
+            }
+          }
+        } catch {}
+      });
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((pos) => {
@@ -118,7 +93,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       console.error("Map init error:", err);
       setMapError(true);
     }
-  }, [updatePositions]);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.ymaps) setScriptLoaded(true);
@@ -138,10 +113,9 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       if (mapInstance.current) {
         try { mapInstance.current.destroy(); } catch {}
         mapInstance.current = null;
+        placemarkRefs.current = [];
       }
       setMapReady(false);
-      setCustomPane(null);
-      markerDivRefs.current.clear();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptLoaded]);
@@ -151,31 +125,75 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
-        if (width > 0 && height > 0) {
-          if (mapInstance.current) {
-            requestAnimationFrame(() => {
-              try { mapInstance.current?.container.fitToViewport(); } catch {}
-              updatePositions();
-            });
-          } else if (window.ymaps && scriptLoaded) {
-            window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
-          }
+        if (width > 0 && height > 0 && mapInstance.current) {
+          requestAnimationFrame(() => {
+            try { mapInstance.current?.container.fitToViewport(); } catch {}
+          });
+        } else if (width > 0 && height > 0 && window.ymaps && scriptLoaded) {
+          window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
         }
       }
     });
     observer.observe(mapRef.current);
     return () => observer.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptLoaded, buildMap, updatePositions]);
+  }, [scriptLoaded, buildMap]);
 
+  // Rebuild glass-pill placemarks whenever vehicles or selection changes
   useEffect(() => {
-    setVehicleList(vehicles.filter(v => !!v.lastState));
-  }, [vehicles]);
+    if (!mapReady || !mapInstance.current || !window.ymaps) return;
 
-  // Position markers before first paint after pane/list is ready
-  useLayoutEffect(() => {
-    if (mapReady && customPane) updatePositions();
-  }, [vehicleList, mapReady, customPane, updatePositions]);
+    placemarkRefs.current.forEach((p) => {
+      try { mapInstance.current.geoObjects.remove(p); } catch {}
+    });
+    placemarkRefs.current = [];
+
+    vehicles.forEach((vehicle) => {
+      if (!vehicle.lastState) return;
+      const price      = vehicle.baseTariff.pricePerMinCents / 100;
+      const isSelected = selectedVehicle?.id === vehicle.id;
+
+      const bg  = isSelected ? "rgba(109,40,217,0.93)"     : "rgba(255,255,255,0.92)";
+      const bdr = isSelected ? "rgba(167,139,250,0.80)"    : "rgba(181,126,220,0.50)";
+      const clr = isSelected ? "#ffffff"                   : "#4C1D95";
+      const shd = isSelected
+        ? "0 4px 16px rgba(109,40,217,0.40)"
+        : "0 4px 14px rgba(124,58,237,0.18)";
+
+      const layout = window.ymaps.templateLayoutFactory.createClass(
+        `<div style="
+          display:inline-flex;align-items:center;
+          background:${bg};
+          backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+          border:1.5px solid ${bdr};
+          border-radius:999px;padding:5px 13px;
+          font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+          font-weight:700;font-size:13px;line-height:1;
+          color:${clr};box-shadow:${shd};
+          white-space:nowrap;cursor:pointer;position:relative;">
+          ${price.toFixed(0)}&nbsp;₽/мин
+          <span style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);
+            width:0;height:0;
+            border-left:5px solid transparent;border-right:5px solid transparent;
+            border-top:6px solid ${bg};"></span>
+        </div>`
+      );
+
+      try {
+        const pm = new window.ymaps.Placemark(
+          [vehicle.lastState.lat, vehicle.lastState.lon],
+          {},
+          {
+            iconLayout: layout,
+            iconOffset: [-52, -36],
+            iconShape: { type: "Rectangle", coordinates: [[-55, -36], [55, -4]] },
+          }
+        );
+        mapInstance.current.geoObjects.add(pm);
+        placemarkRefs.current.push(pm);
+      } catch {}
+    });
+  }, [vehicles, selectedVehicle, mapReady]);
 
   useEffect(() => {
     if (!mapReady || !mapInstance.current || !selectedVehicle?.lastState) return;
@@ -190,68 +208,6 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   const handleReload = () => {
     if (window.ymaps) window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
   };
-
-  const markerJSX = vehicleList.map((vehicle) => {
-    const price      = vehicle.baseTariff.pricePerMinCents / 100;
-    const isSelected = selectedVehicle?.id === vehicle.id;
-    return (
-      <div
-        key={vehicle.id}
-        ref={(el) => {
-          if (el) markerDivRefs.current.set(vehicle.id, el);
-          else    markerDivRefs.current.delete(vehicle.id);
-        }}
-        onClick={() => onSelectRef.current?.(vehicle)}
-        style={{
-          position: "absolute",
-          left: -9999,
-          top: -9999,
-          transform: "translate(-50%, calc(-100% - 6px))",
-          cursor: "pointer",
-          pointerEvents: "auto", // override parent pane's pointer-events:none
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            background: isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(10px)",
-            WebkitBackdropFilter: "blur(10px)",
-            border: `1.5px solid ${isSelected ? "rgba(167,139,250,0.80)" : "rgba(181,126,220,0.50)"}`,
-            borderRadius: "999px",
-            padding: "5px 13px",
-            fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
-            fontWeight: 700,
-            fontSize: 13,
-            lineHeight: 1,
-            color: isSelected ? "#ffffff" : "#4C1D95",
-            boxShadow: isSelected
-              ? "0 4px 16px rgba(109,40,217,0.40)"
-              : "0 4px 14px rgba(124,58,237,0.18)",
-            whiteSpace: "nowrap",
-            position: "relative",
-            userSelect: "none",
-          }}
-        >
-          {price.toFixed(0)}&nbsp;₽/мин
-          <span
-            style={{
-              position: "absolute",
-              bottom: -6,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 0,
-              height: 0,
-              borderLeft: "5px solid transparent",
-              borderRight: "5px solid transparent",
-              borderTop: `6px solid ${isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)"}`,
-            }}
-          />
-        </div>
-      </div>
-    );
-  });
 
   return (
     <>
@@ -280,9 +236,6 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
             </button>
           </div>
         )}
-
-        {/* Markers live inside ymaps' inner-panes via portal — move with map tiles */}
-        {customPane && createPortal(markerJSX, customPane)}
 
         <div className="absolute bottom-4 left-4 z-[1000]">
           <div
