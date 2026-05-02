@@ -8,9 +8,7 @@ import { MapPin, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 declare global {
-  interface Window {
-    ymaps: any;
-  }
+  interface Window { ymaps: any; }
 }
 
 interface Props {
@@ -20,35 +18,66 @@ interface Props {
   className?: string;
 }
 
+interface MarkerPos {
+  id: string;
+  x: number;
+  y: number;
+  vehicle: VehicleWithDetails;
+}
+
 export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, className }: Props) {
   const { mapCenter, zoom } = useSearchStore();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
-  const placemarkRefs = useRef<any[]>([]);
+
+  // Refs stay fresh inside DOM event listeners (added once, never re-added)
+  const onSelectRef = useRef(onVehicleSelect);
+  const markerPositionsRef = useRef<MarkerPos[]>([]);
+
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState(false);
+  const [markerPositions, setMarkerPositions] = useState<MarkerPos[]>([]);
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY;
 
-  // Если скрипт уже был загружен при предыдущем монтировании — сразу ставим флаг
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.ymaps) {
-      setScriptLoaded(true);
+  useEffect(() => { onSelectRef.current = onVehicleSelect; }, [onVehicleSelect]);
+
+  const toPixel = (lat: number, lon: number): { x: number; y: number } => {
+    const map = mapInstance.current;
+    if (!map) return { x: -9999, y: -9999 };
+    try {
+      const z   = map.getZoom();
+      const proj = map.options.get("projection");
+      const gc  = map.getGlobalPixelCenter();
+      const sz  = map.container.getSize();
+      const gp  = proj.toGlobalPixels([lat, lon], z);
+      return { x: gp[0] - gc[0] + sz[0] / 2, y: gp[1] - gc[1] + sz[1] / 2 };
+    } catch { return { x: -9999, y: -9999 }; }
+  };
+
+  const updatePositions = useCallback(() => {
+    if (!mapInstance.current) return;
+    const positions: MarkerPos[] = [];
+    for (const v of vehicles) {
+      if (!v.lastState) continue;
+      const { x, y } = toPixel(v.lastState.lat, v.lastState.lon);
+      positions.push({ id: v.id, x, y, vehicle: v });
     }
-  }, []);
+    markerPositionsRef.current = positions; // keep ref fresh for DOM listener
+    setMarkerPositions(positions);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicles]);
 
   const buildMap = useCallback((lat: number, lon: number, z: number) => {
     if (!mapRef.current || !window.ymaps) return;
-
-    // Destroy stale instance if any
     if (mapInstance.current) {
       try { mapInstance.current.destroy(); } catch {}
       mapInstance.current = null;
-      placemarkRefs.current = [];
       setMapReady(false);
+      setMarkerPositions([]);
+      markerPositionsRef.current = [];
     }
-
     try {
       const map = new window.ymaps.Map(mapRef.current, {
         center: [lat, lon],
@@ -59,165 +88,89 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       setMapError(false);
       setMapReady(true);
 
-      // Show user location
+      map.events.add(["actiontick", "boundschange", "sizechange"], updatePositions);
+
+      // ymaps sets z-index:2500 as an inline style on the events-pane.
+      // CSS !important loses to inline styles, so we override it via JS.
+      const lowerEventsPaneZIndex = () => {
+        const pane = mapRef.current?.querySelector<HTMLElement>(".ymaps-2-1-79-events-pane");
+        if (pane) pane.style.setProperty("z-index", "400", "important");
+      };
+      lowerEventsPaneZIndex();
+      setTimeout(lowerEventsPaneZIndex, 300); // retry in case pane wasn't in DOM yet
+
+
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (!mapInstance.current) return;
-            const { latitude, longitude } = pos.coords;
-            mapInstance.current.setCenter([latitude, longitude], 14);
-            const userMark = new window.ymaps.Placemark(
-              [latitude, longitude],
-              { balloonContent: "Вы здесь" },
-              { preset: "islands#dotCircleIcon", iconColor: "#7c3aed" }
-            );
-            mapInstance.current.geoObjects.add(userMark);
-          },
-          () => {}
-        );
+        navigator.geolocation.getCurrentPosition((pos) => {
+          if (!mapInstance.current) return;
+          const { latitude, longitude } = pos.coords;
+          mapInstance.current.setCenter([latitude, longitude], 14);
+          mapInstance.current.geoObjects.add(new window.ymaps.Placemark(
+            [latitude, longitude],
+            { balloonContent: "Вы здесь" },
+            { preset: "islands#dotCircleIcon", iconColor: "#7c3aed" }
+          ));
+        }, () => {});
       }
-    } catch (e) {
-      console.error("Map init error:", e);
+    } catch (err) {
+      console.error("Map init error:", err);
       setMapError(true);
     }
+  }, [updatePositions]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.ymaps) setScriptLoaded(true);
   }, []);
 
-  // Initialize map when script loads
   useEffect(() => {
     if (!scriptLoaded || !mapRef.current) return;
     let destroyed = false;
-
     const tryInit = () => {
       if (destroyed) return;
       if (!window.ymaps) { setTimeout(tryInit, 100); return; }
-      window.ymaps.ready(() => {
-        if (destroyed) return;
-        buildMap(mapCenter.lat, mapCenter.lon, zoom);
-      });
+      window.ymaps.ready(() => { if (!destroyed) buildMap(mapCenter.lat, mapCenter.lon, zoom); });
     };
-
     tryInit();
-
     return () => {
       destroyed = true;
       if (mapInstance.current) {
         try { mapInstance.current.destroy(); } catch {}
         mapInstance.current = null;
-        placemarkRefs.current = [];
       }
       setMapReady(false);
+      setMarkerPositions([]);
+      markerPositionsRef.current = [];
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scriptLoaded]);
 
-  // ResizeObserver: когда контейнер появляется/меняет размер — восстанавливаем карту
   useEffect(() => {
     if (!mapRef.current) return;
-
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         if (width > 0 && height > 0) {
           if (mapInstance.current) {
-            // Карта существует — ждём следующего кадра и обновляем viewport
             requestAnimationFrame(() => {
               try { mapInstance.current?.container.fitToViewport(); } catch {}
+              updatePositions();
             });
           } else if (window.ymaps && scriptLoaded) {
-            // Карта не создана — инициализируем
             window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
           }
         }
       }
     });
-
     observer.observe(mapRef.current);
     return () => observer.disconnect();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptLoaded, buildMap]);
+  }, [scriptLoaded, buildMap, updatePositions]);
 
-  // Update vehicle markers
   useEffect(() => {
-    if (!mapReady || !mapInstance.current || !window.ymaps) return;
+    if (mapReady) updatePositions();
+  }, [vehicles, mapReady, updatePositions]);
 
-    placemarkRefs.current.forEach((p) => {
-      try { mapInstance.current.geoObjects.remove(p); } catch {}
-    });
-    placemarkRefs.current = [];
 
-    // Global handler registry — inline onclick in template strings is the
-    // only reliable way to capture clicks on custom Yandex Maps iconLayouts
-    // because ymaps applies pointer-events:none to icon overlay layers.
-    if (!(window as any).__arscarsMarkers) (window as any).__arscarsMarkers = {};
-
-    vehicles.forEach((vehicle) => {
-      if (!vehicle.lastState) return;
-
-      const price = vehicle.baseTariff.pricePerMinCents / 100;
-      const isSelected = selectedVehicle?.id === vehicle.id;
-
-      // Register handler in global registry so inline onclick can reach it
-      const hid = `m_${vehicle.id}`;
-      (window as any).__arscarsMarkers[hid] = () => onVehicleSelect?.(vehicle);
-
-      try {
-        const bg  = isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)";
-        const bdr = isSelected ? "rgba(167,139,250,0.80)" : "rgba(181,126,220,0.50)";
-        const clr = isSelected ? "#ffffff" : "#4C1D95";
-        const shd = isSelected
-          ? "0 4px 16px rgba(109,40,217,0.40)"
-          : "0 4px 14px rgba(124,58,237,0.18)";
-
-        const glassLayout = window.ymaps.templateLayoutFactory.createClass(
-          `<div
-            onclick="(window.__arscarsMarkers&&window.__arscarsMarkers['${hid}']&&window.__arscarsMarkers['${hid}'](event.stopPropagation()))"
-            style="
-              display:inline-flex;align-items:center;
-              background:${bg};
-              backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-              border:1.5px solid ${bdr};
-              border-radius:999px;
-              padding:5px 13px;
-              font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
-              font-weight:700;font-size:13px;line-height:1;
-              color:${clr};
-              box-shadow:${shd};
-              white-space:nowrap;cursor:pointer;
-              position:relative;
-            ">
-            ${price.toFixed(0)}&nbsp;₽/мин
-            <span style="
-              position:absolute;bottom:-6px;left:50%;
-              transform:translateX(-50%);
-              width:0;height:0;
-              border-left:5px solid transparent;
-              border-right:5px solid transparent;
-              border-top:6px solid ${bg};
-            "></span>
-          </div>`
-        );
-
-        const placemark = new window.ymaps.Placemark(
-          [vehicle.lastState.lat, vehicle.lastState.lon],
-          {
-            balloonContentHeader: `${vehicle.brand} ${vehicle.model}`,
-            balloonContentBody: `${price.toFixed(0)} ₽/мин · ${vehicle.year}`,
-            hintContent: `${vehicle.brand} ${vehicle.model} — ${price.toFixed(0)} ₽/мин`,
-          },
-          {
-            iconLayout: glassLayout,
-            iconOffset: [-52, -36],
-            iconShape: { type: "Rectangle", coordinates: [[-52, -36], [52, -8]] },
-          }
-        );
-
-        mapInstance.current.geoObjects.add(placemark);
-        placemarkRefs.current.push(placemark);
-      } catch {}
-    });
-  }, [vehicles, selectedVehicle, mapReady]);
-
-  // Pan to selected vehicle
   useEffect(() => {
     if (!mapReady || !mapInstance.current || !selectedVehicle?.lastState) return;
     try {
@@ -229,8 +182,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
   }, [selectedVehicle, mapReady]);
 
   const handleReload = () => {
-    if (!window.ymaps) return;
-    window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
+    if (window.ymaps) window.ymaps.ready(() => buildMap(mapCenter.lat, mapCenter.lon, zoom));
   };
 
   return (
@@ -243,7 +195,9 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
           onError={() => { console.error("Yandex Maps script failed"); setMapError(true); }}
         />
       )}
+
       <div className={cn("relative w-full h-full min-h-[400px] rounded-xl overflow-hidden", className)}>
+        {/* ymaps renders inside this div; DOM clicks bubble up from events pane to here */}
         <div ref={mapRef} className="absolute inset-0" />
 
         {!scriptLoaded && !mapError && (
@@ -251,19 +205,75 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
             <span className="text-muted-foreground text-sm">Загрузка карты…</span>
           </div>
         )}
-
         {mapError && (
           <div className="absolute inset-0 bg-muted flex flex-col items-center justify-center gap-3">
             <span className="text-muted-foreground text-sm">Не удалось загрузить карту</span>
-            <button
-              onClick={handleReload}
-              className="flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Повторить
+            <button onClick={handleReload} className="flex items-center gap-2 text-sm text-primary hover:underline">
+              <RefreshCw className="h-4 w-4" /> Повторить
             </button>
           </div>
         )}
+
+        {/* Glass pill markers — events-pane lowered to 499, so z-index 500 + onClick works */}
+        {mapReady && markerPositions.map(({ id, x, y, vehicle }) => {
+          const price = vehicle.baseTariff.pricePerMinCents / 100;
+          const isSelected = selectedVehicle?.id === vehicle.id;
+          return (
+            <div
+              key={id}
+              onClick={() => onSelectRef.current?.(vehicle)}
+              style={{
+                position: "absolute",
+                left: x,
+                top: y,
+                transform: "translate(-50%, calc(-100% - 6px))",
+                zIndex: 500,
+                cursor: "pointer",
+                pointerEvents: "auto",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  background: isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)",
+                  backdropFilter: "blur(10px)",
+                  WebkitBackdropFilter: "blur(10px)",
+                  border: `1.5px solid ${isSelected ? "rgba(167,139,250,0.80)" : "rgba(181,126,220,0.50)"}`,
+                  borderRadius: "999px",
+                  padding: "5px 13px",
+                  fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  lineHeight: 1,
+                  color: isSelected ? "#ffffff" : "#4C1D95",
+                  boxShadow: isSelected
+                    ? "0 4px 16px rgba(109,40,217,0.40)"
+                    : "0 4px 14px rgba(124,58,237,0.18)",
+                  whiteSpace: "nowrap",
+                  position: "relative",
+                  userSelect: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {price.toFixed(0)}&nbsp;₽/мин
+                <span
+                  style={{
+                    position: "absolute",
+                    bottom: -6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 0,
+                    height: 0,
+                    borderLeft: "5px solid transparent",
+                    borderRight: "5px solid transparent",
+                    borderTop: `6px solid ${isSelected ? "rgba(109,40,217,0.93)" : "rgba(255,255,255,0.92)"}`,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
 
         <div className="absolute bottom-4 left-4 z-[1000]">
           <div

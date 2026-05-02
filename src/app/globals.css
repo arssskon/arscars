@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Lower Yandex Maps event-capture pane so React overlay markers (z-index 500) receive clicks */
+.ymaps-2-1-79-events-pane.ymaps-2-1-79-user-selection-none {
+  z-index: 400 !important;
+}
+
 @layer base {
   :root {
     /* shadcn CSS variables */
