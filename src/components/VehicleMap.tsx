@@ -90,14 +90,6 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
 
       map.events.add(["actiontick", "boundschange", "sizechange"], updatePositions);
 
-      // ymaps sets z-index:2500 as an inline style on the events-pane.
-      // CSS !important loses to inline styles, so we override it via JS.
-      const lowerEventsPaneZIndex = () => {
-        const pane = mapRef.current?.querySelector<HTMLElement>(".ymaps-2-1-79-events-pane");
-        if (pane) pane.style.setProperty("z-index", "400", "important");
-      };
-      lowerEventsPaneZIndex();
-      setTimeout(lowerEventsPaneZIndex, 300); // retry in case pane wasn't in DOM yet
 
 
       if (navigator.geolocation) {
@@ -227,7 +219,7 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
                 left: x,
                 top: y,
                 transform: "translate(-50%, calc(-100% - 6px))",
-                zIndex: 500,
+                zIndex: 3000,
                 cursor: "pointer",
                 pointerEvents: "auto",
               }}
