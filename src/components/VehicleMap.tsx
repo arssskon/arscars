@@ -152,13 +152,18 @@ export function VehicleMap({ vehicles, onVehicleSelect, selectedVehicle, classNa
       if (!vehicle.lastState) return;
       const price      = vehicle.baseTariff.pricePerMinCents / 100;
       const isSelected = selectedVehicle?.id === vehicle.id;
+      const isOwner    = vehicle.source === "owner";
 
-      const bg  = isSelected ? "rgba(109,40,217,0.93)"     : "rgba(255,255,255,0.92)";
-      const bdr = isSelected ? "rgba(167,139,250,0.80)"    : "rgba(181,126,220,0.50)";
-      const clr = isSelected ? "#ffffff"                   : "#4C1D95";
+      const bg  = isSelected
+        ? (isOwner ? "rgba(180,83,9,0.93)"   : "rgba(109,40,217,0.93)")
+        : (isOwner ? "rgba(254,243,199,0.95)" : "rgba(255,255,255,0.92)");
+      const bdr = isSelected
+        ? (isOwner ? "rgba(251,191,36,0.80)"  : "rgba(167,139,250,0.80)")
+        : (isOwner ? "rgba(245,158,11,0.60)"  : "rgba(181,126,220,0.50)");
+      const clr = isSelected ? "#ffffff" : (isOwner ? "#92400e" : "#4C1D95");
       const shd = isSelected
-        ? "0 4px 16px rgba(109,40,217,0.40)"
-        : "0 4px 14px rgba(124,58,237,0.18)";
+        ? (isOwner ? "0 4px 16px rgba(180,83,9,0.40)"   : "0 4px 16px rgba(109,40,217,0.40)")
+        : (isOwner ? "0 4px 14px rgba(245,158,11,0.25)" : "0 4px 14px rgba(124,58,237,0.18)");
 
       const layout = window.ymaps.templateLayoutFactory.createClass(
         `<div style="

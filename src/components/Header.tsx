@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GlassButton } from "@/components/ui/glass";
 import { useAuthStore } from "@/lib/store";
-import { Menu, Search, User, LogOut, History } from "lucide-react";
+import { Menu, Search, User, LogOut, History, CarFront } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
@@ -109,6 +109,11 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="text-[var(--text-primary)]">
                     <User className="mr-2 h-4 w-4 text-lavender-400" />Профиль
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/owner/dashboard" className="text-[var(--text-primary)]">
+                    <CarFront className="mr-2 h-4 w-4 text-lavender-400" />Мои объявления
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

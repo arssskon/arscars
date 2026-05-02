@@ -1,13 +1,14 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/store";
 import { ToastProvider } from "@/components/admin/Toast";
 import {
   LayoutDashboard,
   Car,
+  CarFront,
   CalendarCheck,
   Route,
   Users,
@@ -25,7 +26,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
+const navItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }>; pendingBadge?: boolean }[] = [
   { label: "Дашборд", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Автомобили", href: "/admin/vehicles", icon: Car },
   { label: "Бронирования", href: "/admin/reservations", icon: CalendarCheck },
@@ -36,6 +37,7 @@ const navItems = [
   { label: "Зоны", href: "/admin/zones", icon: MapPin },
   { label: "Инциденты", href: "/admin/incidents", icon: AlertTriangle },
   { label: "Аудит", href: "/admin/audit", icon: ClipboardList },
+  { label: "Объявления владельцев", href: "/admin/owner-listings", icon: CarFront, pendingBadge: true },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -44,6 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, isAuthenticated, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [pendingOwnerCount, setPendingOwnerCount] = useState(0);
 
   useEffect(() => {
     // Wait for Zustand persist to hydrate from localStorage
@@ -56,7 +59,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!hydrated) return;
     if (!isAuthenticated || !user?.roles.includes("admin")) {
       router.replace("/login?redirect=/admin");
+      return;
     }
+    fetch("/api/admin/owner-listings", { credentials: "include" })
+      .then((r) => { setPendingOwnerCount(Number(r.headers.get("X-Pending-Count") ?? 0)); })
+      .catch(() => {});
   }, [hydrated, isAuthenticated, user, router]);
 
   const handleLogout = () => {
@@ -95,6 +102,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const isActive =
               pathname === item.href ||
               (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
+            const badge = "pendingBadge" in item && item.pendingBadge && pendingOwnerCount > 0;
             return (
               <li key={item.href}>
                 <Link
@@ -108,7 +116,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {badge && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+                      {pendingOwnerCount}
+                    </span>
+                  )}
                 </Link>
               </li>
             );

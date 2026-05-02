@@ -10,7 +10,7 @@ import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { GlassPanel } from "@/components/ui/glass/GlassPanel";
 import { GlassBadge } from "@/components/ui/glass/GlassBadge";
 import type { VehicleWithDetails } from "@/lib/mock-data";
-import { Car, MapPin, CalendarCheck, CreditCard, ChevronRight, ArrowRight } from "lucide-react";
+import { Car, MapPin, CalendarCheck, CreditCard, ChevronRight, ArrowRight, CarFront } from "lucide-react";
 
 const stats = [
   { value: "500+",  label: "Автомобилей" },
@@ -124,7 +124,7 @@ export default function HomePage() {
                 500+ авто · 5 классов · от 3 ₽/мин. Бронируй онлайн за 2 минуты.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
                 <Link href="/search">
                   <GlassButton variant="primary" size="lg">
                     <MapPin className="h-5 w-5" />
@@ -135,6 +135,12 @@ export default function HomePage() {
                   <GlassButton variant="ghost" size="lg">
                     Смотреть тарифы
                     <ArrowRight className="h-5 w-5" />
+                  </GlassButton>
+                </Link>
+                <Link href="/owner/new" className="sm:w-auto w-full">
+                  <GlassButton variant="outline" size="lg" className="w-full sm:w-auto">
+                    <CarFront className="h-[18px] w-[18px]" />
+                    Сдать машину в аренду
                   </GlassButton>
                 </Link>
               </div>

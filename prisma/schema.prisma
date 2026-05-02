@@ -18,6 +18,14 @@ enum RoleName {
   driver
   support
   admin
+  owner
+}
+
+enum OwnerListingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 enum VerificationStatus {
@@ -113,6 +121,7 @@ model User {
   tripAdjustments     TripAdjustment[]
   vehicleStatusChanges VehicleStatusHistory[]
   auditLogs           AuditLog[]
+  ownerListings       OwnerListing[]
 
   @@map("users")
 }
@@ -394,6 +403,38 @@ model IncidentMedia {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
   @@map("incident_media")
+}
+
+// Owner Listings
+model OwnerListing {
+  id             String             @id @default(uuid()) @db.Uuid
+  userId         String             @db.Uuid
+  user           User               @relation(fields: [userId], references: [id])
+  status         OwnerListingStatus @default(PENDING)
+  make           String
+  model          String
+  year           Int
+  plateNumber    String             @unique
+  color          String
+  description    String?
+  photoUrls      String[]
+  pricePerMinute Decimal            @db.Decimal(10, 2)
+  minCharge      Decimal            @db.Decimal(10, 2)
+  vehicleClass   String
+  transmission   String
+  fuelType       String
+  latitude       Decimal?           @db.Decimal(9, 6)
+  longitude      Decimal?           @db.Decimal(9, 6)
+  address        String?
+  availableFrom  DateTime?          @db.Timestamptz
+  availableTo    DateTime?          @db.Timestamptz
+  rejectReason   String?
+  ownerPhone     String
+  vehicleId      String?            @db.Uuid
+  createdAt      DateTime           @default(now()) @db.Timestamptz
+  updatedAt      DateTime           @updatedAt @db.Timestamptz
+
+  @@map("owner_listings")
 }
 
 // Audit Log

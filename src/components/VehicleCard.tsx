@@ -107,8 +107,13 @@ export function VehicleCard({ vehicle, distance, onSelect, selected, compact }: 
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/15 via-transparent to-transparent" />
 
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col gap-1">
           <ClassBadge className={deriveClass(price)} />
+          {vehicle.source === "owner" && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100/90 text-amber-800 border border-amber-300/60 backdrop-blur-sm">
+              Частное авто
+            </span>
+          )}
         </div>
         <div className="absolute top-3 right-3">
           <GlassBadge variant="lavender">{price.toFixed(0)} ₽/мин</GlassBadge>

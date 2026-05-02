@@ -16,6 +16,7 @@ export interface VehicleWithDetails {
   fuelType: { id: number; name: string };
   baseTariff: { id: string; name: string; pricePerMinCents: number; minChargeCents: number };
   lastState?: { lat: number; lon: number; fuelPercent: number | null; chargePercent: number | null } | null;
+  source?: "owner" | "fleet";
 }
 
 // Unique photos per model from Unsplash (public domain car photos)

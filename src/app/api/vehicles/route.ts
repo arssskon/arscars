@@ -18,17 +18,25 @@ export async function GET(req: NextRequest) {
     else if (minPrice) where.baseTariff = { pricePerMinCents: { gte: minPrice } };
     else if (maxPrice) where.baseTariff = { pricePerMinCents: { lte: maxPrice } };
 
-    const vehicles = await prisma.vehicle.findMany({
-      where,
-      orderBy: { createdAt: "asc" },
-      include: {
-        vehicleClass: true,
-        transmission: true,
-        fuelType: true,
-        baseTariff: true,
-        lastState: true,
-      },
-    });
+    const [vehicles, ownerListings] = await Promise.all([
+      prisma.vehicle.findMany({
+        where,
+        orderBy: { createdAt: "asc" },
+        include: {
+          vehicleClass: true,
+          transmission: true,
+          fuelType: true,
+          baseTariff: true,
+          lastState: true,
+        },
+      }),
+      prisma.ownerListing.findMany({
+        where: { status: "APPROVED", vehicleId: { not: null } },
+        select: { vehicleId: true },
+      }),
+    ]);
+
+    const ownerVehicleIds = new Set(ownerListings.map((l) => l.vehicleId as string));
 
     const data = vehicles.map((v) => ({
       id: v.id,
@@ -51,6 +59,7 @@ export async function GET(req: NextRequest) {
             chargePercent: v.lastState.chargePercent,
           }
         : null,
+      source: ownerVehicleIds.has(v.id) ? ("owner" as const) : ("fleet" as const),
     }));
 
     return NextResponse.json(data);
