@@ -293,17 +293,12 @@ export default function OwnerNewPage() {
                       </div>
                     </div>
                     <div>
-                      <Label>Адрес выдачи *</Label>
-                      <input className={inputCls} placeholder="Город, улица, дом"
-                        value={form.address} onChange={(e) => set("address", e.target.value)} />
-                    </div>
-                    <div>
                       <Label>Местоположение на карте</Label>
                       <MapPicker
                         lat={form.latitude}
                         lon={form.longitude}
                         onChange={(lat, lon) => setForm((p) => ({ ...p, latitude: lat, longitude: lon }))}
-                        onAddressChange={(addr) => setForm((p) => ({ ...p, address: p.address || addr }))}
+                        onAddressChange={(addr) => setForm((p) => ({ ...p, address: addr }))}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -321,8 +316,8 @@ export default function OwnerNewPage() {
                     <div className="pt-2 flex gap-3 justify-between">
                       <GlassButton variant="ghost" onClick={() => go(2)}>← Назад</GlassButton>
                       <GlassButton variant="primary" disabled={loading} onClick={() => {
-                        if (!form.pricePerMinute || !form.minCharge || !form.address) {
-                          toastError("Заполните цену и адрес"); return;
+                        if (!form.pricePerMinute || !form.minCharge) {
+                          toastError("Заполните цену за минуту и минимальное списание"); return;
                         }
                         handleSubmit();
                       }}>

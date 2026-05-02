@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     !make || !model || !year || !plateNumber || !color ||
     !Array.isArray(photoUrls) || photoUrls.length === 0 || !photoUrls[0] ||
     !pricePerMinute || !minCharge || !vehicleClass ||
-    !transmission || !fuelType || !ownerPhone || !address
+    !transmission || !fuelType || !ownerPhone
   ) {
     return NextResponse.json({ error: "Заполните все обязательные поля" }, { status: 400 });
   }

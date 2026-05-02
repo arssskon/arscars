@@ -208,14 +208,13 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
                       <div><Label>₽/мин *</Label><input className={inputCls} type="number" min={1} value={form.pricePerMinute} onChange={(e) => set("pricePerMinute", e.target.value)} /></div>
                       <div><Label>Мин. ₽ *</Label><input className={inputCls} type="number" min={10} value={form.minCharge} onChange={(e) => set("minCharge", e.target.value)} /></div>
                     </div>
-                    <div><Label>Адрес *</Label><input className={inputCls} value={form.address} onChange={(e) => set("address", e.target.value)} /></div>
                     <div>
                       <Label>Местоположение на карте</Label>
                       <MapPicker
                         lat={form.latitude}
                         lon={form.longitude}
                         onChange={(lat, lon) => setForm((p) => p ? { ...p, latitude: lat, longitude: lon } : p)}
-                        onAddressChange={(addr) => setForm((p) => p ? { ...p, address: p.address || addr } : p)}
+                        onAddressChange={(addr) => setForm((p) => p ? { ...p, address: addr } : p)}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
