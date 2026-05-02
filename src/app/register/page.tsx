@@ -169,7 +169,7 @@ export default function RegisterPage() {
             </div>
             <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
               Я принимаю{" "}
-              <Link href="#" className="text-lavender-600 hover:underline">условия</Link>
+              <Link href="/terms" target="_blank" className="text-lavender-600 hover:underline">условия использования</Link>
             </span>
           </label>
 
