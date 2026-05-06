@@ -1,34 +1,204 @@
-# arscars - Каршеринг Porsche
+# arscars
 
-Премиальный сервис каршеринга автомобилей Porsche в Москве.
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?logo=tailwind-css&logoColor=white)
+![Bun](https://img.shields.io/badge/Bun-1-fbf0df?logo=bun&logoColor=black)
+![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel&logoColor=white)
 
-![arscars](https://images-porsche.imgix.net/-/media/1DBDC37E82084CF496EE48FCCE48BE0A_B3C2A87AF66E4046A12F32259A2BA221_911-gt3-side?w=1200&q=45&auto=format)
+**arscars** — P2P-платформа краткосрочной аренды автомобилей. Частные владельцы размещают свои автомобили, арендаторы находят и бронируют подходящий вариант. Администраторы управляют флотом, тарифами, верификацией водителей и модерацией объявлений.
 
-## Технологический стек
+🔗 **Демо:** [arscars.vercel.app](https://arscars.vercel.app)
 
-- **Frontend**: Next.js 15, React 18, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui
-- **State Management**: Zustand
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: JWT-based auth
-- **Maps**: Яндекс.Карты (готово к интеграции)
+---
+
+## Стек технологий
+
+| Уровень | Технологии |
+|---------|-----------|
+| Фреймворк | Next.js 15 (App Router, Server Components, Turbopack) |
+| Язык | TypeScript 5.8 (strict mode) |
+| Стилизация | Tailwind CSS 3 + Radix UI + дизайн-система Liquid Glass |
+| ORM | Prisma 6 |
+| База данных | PostgreSQL 16 |
+| Аутентификация | JWT в httpOnly-cookies + RBAC + Edge Middleware |
+| Хранилище файлов | Vercel Blob |
+| Карты | Yandex Maps API 2.1 |
+| Клиентское состояние | Zustand 5 |
+| Анимации | Framer Motion 12 |
+| Пакетный менеджер / Runtime | Bun 1 |
+| Деплой | Vercel |
+| Линтер / Форматтер | Biome |
+
+---
+
+## Функциональность
+
+### Арендатор (`driver`)
+- Регистрация и вход (email / телефон + пароль)
+- Каталог автомобилей с фильтрацией по классу, трансмиссии, типу топлива и цене
+- Карта с кастомными маркерами-плашками (цена/мин), плавная навигация между объектами
+- Страница детальной информации об автомобиле: технические характеристики, тариф, рейтинг, фото
+- Загрузка и управление водительскими документами (паспорт, водительское удостоверение — до 10 МБ)
+- Просмотр истории поездок и платежей
+- Личный кабинет: профиль, настройки
+
+### Владелец ТС (`owner`)
+- Трёхшаговая форма подачи объявления: данные автомобиля → характеристики и тариф → местоположение на карте
+- Интерактивный выбор местоположения через Yandex Maps (перетаскиваемый маркер + автоматическое геокодирование адреса)
+- Личный кабинет с таблицей своих объявлений и статусами (`PENDING` / `APPROVED` / `REJECTED` / `SUSPENDED`)
+- Редактирование и удаление объявлений в статусах `PENDING` и `REJECTED`
+
+### Администратор (`admin`)
+- **Дашборд** — сводные метрики платформы
+- **Пользователи** — просмотр, управление ролями и статусами аккаунтов
+- **Объявления владельцев** — модерация: одобрение/отклонение/приостановка; при одобрении автоматически создаётся запись автомобиля и тарифа
+- **Автомобили** — управление флотом (статусы, тарифы, зоны)
+- **Поездки** и **Бронирования** — просмотр и управление
+- **Тарифы** — создание и редактирование тарифных планов
+- **Инциденты** — регистрация и разбор (ДТП, штрафы, повреждения, эвакуация)
+- **Сервисные зоны** — геозоны с правилами завершения поездки и штрафными тарифами
+- **Верификация документов** — проверка документов водителей
+- **Аудит-лог** — полный журнал действий администраторов
+
+---
+
+## Архитектура
+
+### Структура проекта
+
+```
+arscars/
+├── prisma/
+│   ├── schema.prisma           # Схема БД (23 таблицы)
+│   └── seed.ts                 # Начальное заполнение данными
+├── src/
+│   ├── middleware.ts            # Edge Middleware: охрана /admin/*
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # Корневой layout
+│   │   ├── page.tsx            # Главная (лендинг)
+│   │   ├── search/             # Поиск + карта
+│   │   ├── vehicles/[id]/      # Карточка автомобиля
+│   │   ├── login/ register/    # Аутентификация
+│   │   ├── profile/ settings/  # Личный кабинет арендатора
+│   │   ├── trips/ payments/    # История поездок и платежей
+│   │   ├── documents/          # Загрузка документов
+│   │   ├── owner/              # Кабинет владельца ТС
+│   │   │   ├── new/            # Форма нового объявления
+│   │   │   ├── dashboard/      # Мои объявления
+│   │   │   └── listings/[id]/  # Редактирование объявления
+│   │   ├── admin/              # Панель администратора
+│   │   │   ├── dashboard/
+│   │   │   ├── users/
+│   │   │   ├── vehicles/
+│   │   │   ├── owner-listings/
+│   │   │   ├── trips/
+│   │   │   ├── reservations/
+│   │   │   ├── tariffs/
+│   │   │   ├── incidents/
+│   │   │   ├── zones/
+│   │   │   ├── documents/
+│   │   │   └── audit/
+│   │   └── api/                # REST API (Route Handlers)
+│   │       ├── auth/           # login, register, me
+│   │       ├── vehicles/       # Каталог + детали
+│   │       ├── me/             # Профиль, документы, поездки, платежи
+│   │       ├── owner/listings/ # CRUD объявлений владельца
+│   │       ├── admin/          # Все admin-эндпоинты
+│   │       └── upload/         # Загрузка файлов в Vercel Blob
+│   ├── components/
+│   │   ├── ui/glass/           # Дизайн-система Liquid Glass
+│   │   │   ├── GlassButton.tsx
+│   │   │   ├── GlassCard.tsx
+│   │   │   ├── GlassPanel.tsx
+│   │   │   └── GlassBadge.tsx
+│   │   ├── ui/MapPicker.tsx    # Выбор точки на карте
+│   │   ├── ui/ClassBadge.tsx   # Бейдж класса автомобиля
+│   │   ├── VehicleCard.tsx     # Карточка авто (обычная и компактная)
+│   │   ├── VehicleMap.tsx      # Карта с маркерами (Yandex Maps)
+│   │   ├── Header.tsx
+│   │   └── Footer.tsx
+│   └── lib/
+│       ├── prisma.ts           # Singleton Prisma Client
+│       ├── auth.ts             # JWT: sign / verify
+│       ├── user-guard.ts       # Верификация токена в API
+│       ├── admin-guard.ts      # Проверка роли admin в API
+│       ├── audit.ts            # Запись в audit_log
+│       ├── store.ts            # Zustand: auth + search state
+│       ├── mock-data.ts        # Типы и вспомогательные функции
+│       └── utils.ts            # cn() и прочие утилиты
+└── public/                     # Статические файлы (логотип, иконки)
+```
+
+### Ключевые архитектурные решения
+
+**RBAC на двух уровнях:**
+```
+Запрос → Edge Middleware (быстрый декод JWT, проверка роли)
+       → API Route Handler (полная верификация JWT через jsonwebtoken)
+       → Prisma → PostgreSQL
+```
+
+- **Edge Middleware** (`middleware.ts`) защищает все маршруты `/admin/*` без обращения к БД — декодирует payload JWT на Edge Runtime
+- **Серверные гарды** (`user-guard.ts`, `admin-guard.ts`) — полная криптографическая верификация подписи токена перед каждым запросом к данным
+
+**Prisma + `db push`:** схема применяется автоматически при каждом деплое на Vercel через build-скрипт, миграционные файлы не используются в production.
+
+---
+
+## Схема базы данных
+
+23 таблицы, 8 enum-типов:
+
+| Таблица | Описание |
+|---------|---------|
+| `users` | Пользователи всех ролей |
+| `roles` / `user_roles` | Роли: `driver`, `owner`, `support`, `admin` |
+| `vehicles` | Автомобили флота и одобренные P2P |
+| `vehicle_classes` | Классы: sport, luxury, suv, coupe, sedan |
+| `transmissions` | Трансмиссии: AT, MT, PDK |
+| `fuel_types` | Типы топлива: petrol, diesel, electric, hybrid |
+| `tariffs` | Тарифные планы (цена за минуту в копейках, минимальное списание) |
+| `vehicle_last_state` | Текущие координаты, уровень топлива/заряда |
+| `vehicle_telemetry` | История телеметрии |
+| `vehicle_status_history` | Лог смен статуса автомобиля |
+| `reservations` | Бронирования (TTL 15 минут) |
+| `trips` | Поездки: координаты, длительность, сумма |
+| `payments` | Операции: preauth, capture, refund, adjustment |
+| `owner_listings` | Объявления владельцев (PENDING → APPROVED/REJECTED/SUSPENDED) |
+| `driver_profiles` / `driver_documents` | Верификация водителей |
+| `zones` / `zone_rules` | Сервисные зоны с правилами и штрафными коэффициентами |
+| `incidents` / `incident_media` | Инциденты с медиа-вложениями |
+| `audit_log` | Журнал административных действий |
+
+---
+
+## Аутентификация
+
+- JWT подписывается на сервере с помощью `jsonwebtoken` и записывается в `httpOnly`-cookie `auth-token` (недоступна JavaScript на клиенте)
+- Payload токена: `{ userId, roles[], email, iat, exp }`
+- Срок жизни настраивается через `JWT_EXPIRES_IN` (по умолчанию `7d`)
+- Выход — удаление cookie без обращения к БД (stateless)
+- Клиентский стор `useAuthStore` (Zustand, persist) хранит профиль пользователя для UI
+
+---
 
 ## Быстрый старт
 
 ### Требования
 
-- Node.js 18+ или Bun
-- PostgreSQL 15+ (опционально для MVP)
+- [Bun](https://bun.sh) ≥ 1.0
+- PostgreSQL ≥ 14
+- Node.js ≥ 20
 
 ### Установка
 
 ```bash
-# Клонирование и установка зависимостей
+git clone https://github.com/arssskon/arscars.git
 cd arscars
 bun install
-
-# Запуск в режиме разработки
-bun dev
 ```
 
 ### Переменные окружения
@@ -36,115 +206,86 @@ bun dev
 Создайте файл `.env` в корне проекта:
 
 ```env
-# Database (для production)
-DATABASE_URL="postgresql://user:password@localhost:5432/arscars?schema=public"
+# База данных (обязательно)
+DATABASE_POSTGRES_URL="postgresql://USER:PASSWORD@HOST:5432/arscars?schema=public"
 
-# JWT
-JWT_SECRET="your-super-secret-jwt-key"
+# JWT (обязательно)
+JWT_SECRET="your-secret-key-minimum-32-characters"
 JWT_EXPIRES_IN="7d"
 
-# Yandex Maps (опционально)
-NEXT_PUBLIC_YANDEX_MAPS_API_KEY="3c34dc81-b06e-4a4b-b07b-12d9405bf147"
+# Yandex Maps (карта не отобразится без ключа)
+NEXT_PUBLIC_YANDEX_MAPS_API_KEY="your-yandex-maps-api-key"
+
+# Vercel Blob (загрузка файлов недоступна без токена)
+BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
+
+# URL приложения
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-### Работа с базой данных
+| Переменная | Обязательная | Описание |
+|-----------|:-----------:|---------|
+| `DATABASE_POSTGRES_URL` | ✅ | Строка подключения к PostgreSQL |
+| `JWT_SECRET` | ✅ | Секрет для подписи JWT (≥32 символов) |
+| `JWT_EXPIRES_IN` | — | Срок жизни токена (по умолчанию `7d`) |
+| `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` | — | API-ключ Яндекс Карт |
+| `BLOB_READ_WRITE_TOKEN` | — | Токен Vercel Blob для загрузки файлов |
+| `NEXT_PUBLIC_APP_URL` | — | Базовый URL приложения |
+
+### Настройка базы данных
 
 ```bash
-# Генерация Prisma Client
-bunx prisma generate
+# Создать таблицы (применить схему Prisma)
+bun run db:push
 
-# Применение миграций
-bunx prisma migrate dev
-
-# Заполнение тестовыми данными
-bunx prisma db seed
+# Заполнить справочные данные + создать тестовые аккаунты
+bun run db:seed
 ```
 
-## Структура проекта
+После `seed` доступны тестовые аккаунты:
+- Администратор: `admin@arscars.ru` / `admin123`
+- Арендатор: `driver@arscars.ru` / `driver123`
 
-```
-arscars/
-├── prisma/
-│   └── schema.prisma      # Схема базы данных
-├── src/
-│   ├── app/               # Next.js App Router
-│   │   ├── page.tsx       # Главная страница
-│   │   ├── search/        # Поиск авто
-│   │   ├── vehicles/      # Детали автомобиля
-│   │   ├── login/         # Авторизация
-│   │   ├── register/      # Регистрация
-│   │   ├── trips/         # История поездок
-│   │   └── profile/       # Профиль пользователя
-│   ├── components/        # React компоненты
-│   │   ├── ui/            # shadcn/ui компоненты
-│   │   ├── Header.tsx
-│   │   ├── VehicleCard.tsx
-│   │   ├── VehicleMap.tsx
-│   │   └── SearchFilters.tsx
-│   └── lib/               # Утилиты и хелперы
-│       ├── mock-data.ts   # Тестовые данные
-│       ├── store.ts       # Zustand stores
-│       └── utils.ts       # Утилиты
-└── public/                # Статические файлы
+### Запуск
+
+```bash
+bun dev
 ```
 
-## Функционал
+Приложение: [http://localhost:3000](http://localhost:3000)
+Prisma Studio: `bun run db:studio` → [http://localhost:5555](http://localhost:5555)
 
-### Для водителей (клиентов)
-- Регистрация и авторизация (email/телефон)
-- Поиск автомобилей на карте и в списке
-- Фильтрация по классу, типу топлива, КПП, цене
-- Просмотр деталей автомобиля
-- Бронирование на 15 минут
-- История поездок и платежей
+---
 
-### Для операторов (в разработке)
-- Управление бронированиями
-- Просмотр активных поездок
-- Обработка инцидентов
+## Деплой на Vercel
 
-### Для администраторов (в разработке)
-- Управление автопарком
-- Настройка тарифов и зон
-- Верификация пользователей
+1. Создайте проект в [Vercel](https://vercel.com), подключите GitHub-репозиторий
+2. Добавьте переменные окружения из таблицы выше в **Settings → Environment Variables**
+3. Убедитесь, что `DATABASE_POSTGRES_URL` указывает на PostgreSQL, доступный из Vercel (Neon, Supabase, Railway и др.)
+4. Деплой запустится автоматически. Схема БД применяется через build-скрипт:
 
-## База данных
-
-Полная схема базы данных находится в `prisma/schema.prisma` и включает:
-
-- **users** — пользователи
-- **roles** — роли (driver, support, admin)
-- **driver_profiles** — профили водителей
-- **driver_documents** — документы (паспорт, права)
-- **vehicles** — автомобили Porsche
-- **vehicle_classes** — классы (sport, luxury, suv)
-- **tariffs** — тарифы
-- **zones** — геозоны
-- **reservations** — бронирования
-- **trips** — поездки
-- **payments** — платежи
-- **incidents** — инциденты
-
-## API Endpoints
-
-```
-POST /api/auth/register    # Регистрация
-POST /api/auth/login       # Авторизация
-GET  /api/vehicles         # Список автомобилей
-GET  /api/vehicles/:id     # Детали автомобиля
-POST /api/reservations     # Создание брони
-GET  /api/reservations     # Мои бронирования
-POST /api/trips/start      # Начало поездки
-POST /api/trips/finish     # Завершение поездки
+```json
+"build": "bunx prisma db push --accept-data-loss && next build"
 ```
 
-## Особенности
+---
 
-- **Лавандовый дизайн**: Основной цвет #B57EDC
-- **Только Porsche**: Премиальный автопарк
-- **Российская локализация**: RUB, русский язык
-- **Адаптивность**: Desktop-first с мобильной версией
+## Полезные команды
+
+```bash
+bun dev                # Запуск dev-сервера (Turbopack)
+bun run build          # Продакшн-сборка
+bun run lint           # Проверка типов TypeScript + ESLint
+bun run format         # Автоформатирование кода (Biome)
+bun run db:push        # Применить схему Prisma к БД (без миграций)
+bun run db:migrate     # Создать и применить миграцию (dev)
+bun run db:seed        # Заполнить БД начальными данными
+bun run db:reset       # Сбросить БД и повторить seed
+bun run db:studio      # Открыть Prisma Studio (GUI для БД)
+```
+
+---
 
 ## Лицензия
 
-MIT
+MIT © 2024–2025 arscars
