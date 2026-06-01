@@ -15,6 +15,7 @@ import { Car, Clock, Calendar, CreditCard, CheckCircle, Play, ChevronRight, MapP
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { PhotoUploadZone, type TripPhoto } from "@/components/trip/PhotoUploadZone";
+import { StartPhotoUpload } from "@/components/trip/StartPhotoUpload";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface Reservation {
@@ -63,6 +64,25 @@ function TripsPageContent() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Pre-trip photos per reservation (reservationId → TripPhoto[])
+  const [reservationPhotos, setReservationPhotos] = useState<Record<string, TripPhoto[]>>({});
+
+  const loadReservationPhotos = useCallback(async (reservationIds: string[]) => {
+    const headers: Record<string, string> = tokenRef.current ? { Authorization: `Bearer ${tokenRef.current}` } : {};
+    const results = await Promise.all(
+      reservationIds.map((rid) =>
+        fetch(`/api/reservations/${rid}/photos`, { credentials: "include", headers })
+          .then((r) => r.ok ? r.json() : [])
+          .catch(() => [] as TripPhoto[])
+      )
+    );
+    setReservationPhotos((prev) => {
+      const next = { ...prev };
+      reservationIds.forEach((rid, i) => { next[rid] = results[i] as TripPhoto[]; });
+      return next;
+    });
+  }, []);
+
   // Photo dialogs
   const [startPhotoDialog, setStartPhotoDialog] = useState<{ tripId: string } | null>(null);
   const [endPhotoDialog, setEndPhotoDialog] = useState<{ tripId: string } | null>(null);
@@ -89,8 +109,12 @@ function TripsPageContent() {
         fetch("/api/me/reservations", { credentials: "include", headers }).then((r) => r.json()),
         fetch("/api/me/trips", { credentials: "include", headers }).then((r) => r.json()),
       ]);
-      setReservations(Array.isArray(resData) ? resData : []);
+      const resList: Reservation[] = Array.isArray(resData) ? resData : [];
+      setReservations(resList);
       setTrips(Array.isArray(tripsData) ? tripsData : []);
+      if (resList.length > 0) {
+        await loadReservationPhotos(resList.map((r) => r.id));
+      }
     } catch {
       setReservations([]);
       setTrips([]);
@@ -354,53 +378,81 @@ function TripsPageContent() {
               </Card>
             ) : (
               <>
-                {reservations.map((r) => (
-                  <Card key={r.id} className="overflow-hidden">
-                    <div className="flex flex-col md:flex-row">
-                      <div className="relative w-full md:w-48 h-32 bg-muted flex-shrink-0">
-                        {r.vehicle.photoUrl && (
-                          <Image src={r.vehicle.photoUrl} alt={r.vehicle.model} fill className="object-cover" />
-                        )}
+                {reservations.map((r) => {
+                  const rPhotos = reservationPhotos[r.id] ?? [];
+                  const uploadedAngles = new Set(rPhotos.map((p) => p.angle));
+                  const allPhotosReady = (["FRONT", "REAR", "LEFT", "RIGHT"] as const).every((a) => uploadedAngles.has(a));
+
+                  return (
+                    <Card key={r.id} className="overflow-hidden">
+                      <div className="flex flex-col md:flex-row">
+                        <div className="relative w-full md:w-48 h-32 bg-muted flex-shrink-0">
+                          {r.vehicle.photoUrl && (
+                            <Image src={r.vehicle.photoUrl} alt={r.vehicle.model} fill className="object-cover" />
+                          )}
+                        </div>
+                        <CardContent className="flex-1 p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h3 className="font-bold text-lg">{r.vehicle.brand} {r.vehicle.model}</h3>
+                              <p className="text-sm text-muted-foreground">Код: {r.code}</p>
+                            </div>
+                            <Badge className="bg-green-500">Активна</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>Истекает: {format(new Date(r.expiresAt), "HH:mm", { locale: ru })}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CreditCard className="h-4 w-4" />
+                              <span>{r.vehicle.baseTariff.pricePerMinCents / 100} ₽/мин</span>
+                            </div>
+                          </div>
+
+                          {/* Start photo upload — required before trip can begin */}
+                          <div className="mb-4">
+                            <StartPhotoUpload
+                              reservationId={r.id}
+                              photos={rPhotos}
+                              onPhotosChange={(updated) =>
+                                setReservationPhotos((prev) => ({ ...prev, [r.id]: updated }))
+                              }
+                            />
+                          </div>
+
+                          <div className="flex gap-2 items-center">
+                            <div className="relative group">
+                              <Button
+                                className="lavender-gradient text-white gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!allPhotosReady || actionLoading === r.id + "-start"}
+                                onClick={() => handleStart(r.id)}
+                              >
+                                <Play className="h-4 w-4" />
+                                {actionLoading === r.id + "-start" ? "Начинаем..." : "Начать поездку"}
+                              </Button>
+                              {!allPhotosReady && (
+                                <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover:block z-10">
+                                  <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-1.5 whitespace-nowrap shadow-lg">
+                                    Загрузи 4 фото авто
+                                    <div className="absolute top-full left-4 border-4 border-transparent border-t-gray-900" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              disabled={actionLoading === r.id + "-cancel"}
+                              onClick={() => handleCancel(r.id)}
+                            >
+                              {actionLoading === r.id + "-cancel" ? "..." : "Отменить"}
+                            </Button>
+                          </div>
+                        </CardContent>
                       </div>
-                      <CardContent className="flex-1 p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="font-bold text-lg">{r.vehicle.brand} {r.vehicle.model}</h3>
-                            <p className="text-sm text-muted-foreground">Код: {r.code}</p>
-                          </div>
-                          <Badge className="bg-green-500">Активна</Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>Истекает: {format(new Date(r.expiresAt), "HH:mm", { locale: ru })}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <CreditCard className="h-4 w-4" />
-                            <span>{r.vehicle.baseTariff.pricePerMinCents / 100} ₽/мин</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            className="lavender-gradient text-white gap-2"
-                            disabled={actionLoading === r.id + "-start"}
-                            onClick={() => handleStart(r.id)}
-                          >
-                            <Play className="h-4 w-4" />
-                            {actionLoading === r.id + "-start" ? "..." : "Начать"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            disabled={actionLoading === r.id + "-cancel"}
-                            onClick={() => handleCancel(r.id)}
-                          >
-                            {actionLoading === r.id + "-cancel" ? "..." : "Отменить"}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </div>
-                  </Card>
-                ))}
+                    </Card>
+                  );
+                })}
 
                 {activeTrips.map((t) => (
                   <Card key={t.id} className="overflow-hidden border-blue-200">

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserPayload } from "@/lib/user-guard";
+import { PhotoAngle, TripPhase } from "@prisma/client";
+
+const REQUIRED_ANGLES: PhotoAngle[] = ["FRONT", "REAR", "LEFT", "RIGHT"];
 
 export async function POST(
   req: NextRequest,
@@ -25,6 +28,20 @@ export async function POST(
     return NextResponse.json({ error: "Бронирование истекло" }, { status: 400 });
   }
 
+  // Verify all 4 required start photos are uploaded
+  const startPhotos = await prisma.tripPhoto.findMany({
+    where: { reservationId: id, phase: TripPhase.START },
+    select: { angle: true },
+  });
+  const uploadedAngles = new Set(startPhotos.map((p) => p.angle));
+  const missing = REQUIRED_ANGLES.filter((a) => !uploadedAngles.has(a));
+  if (missing.length > 0) {
+    return NextResponse.json(
+      { error: "Загрузи фото перед стартом", missing },
+      { status: 400 }
+    );
+  }
+
   const trip = await prisma.trip.create({
     data: {
       userId: payload.userId,
@@ -33,6 +50,12 @@ export async function POST(
       tariffId: reservation.vehicle.baseTariffId,
       status: "active",
     },
+  });
+
+  // Transfer pre-trip photos to the created trip
+  await prisma.tripPhoto.updateMany({
+    where: { reservationId: id, phase: TripPhase.START },
+    data: { tripId: trip.id },
   });
 
   await prisma.reservation.update({ where: { id }, data: { status: "converted" } });

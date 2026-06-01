@@ -324,9 +324,10 @@ model Reservation {
   createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz
   expiresAt  DateTime          @map("expires_at") @db.Timestamptz
   canceledAt DateTime?         @map("canceled_at") @db.Timestamptz
-  user    User    @relation(fields: [userId], references: [id])
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  user    User        @relation(fields: [userId], references: [id])
+  vehicle Vehicle     @relation(fields: [vehicleId], references: [id])
   trip    Trip?
+  photos  TripPhoto[]
   @@map("reservations")
 }
 
@@ -427,15 +428,17 @@ model IncidentMedia {
 
 // Trip Photos
 model TripPhoto {
-  id         String     @id @default(uuid()) @db.Uuid
-  tripId     String     @map("trip_id") @db.Uuid
-  phase      TripPhase
-  url        String
-  angle      PhotoAngle
-  note       String?
-  uploadedBy String     @map("uploaded_by") @db.Uuid
-  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamptz
-  trip       Trip       @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  id            String       @id @default(uuid()) @db.Uuid
+  tripId        String?      @map("trip_id") @db.Uuid
+  reservationId String?      @map("reservation_id") @db.Uuid
+  phase         TripPhase
+  url           String
+  angle         PhotoAngle
+  note          String?
+  uploadedBy    String       @map("uploaded_by") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  trip          Trip?        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   @@map("trip_photos")
 }
 
