@@ -11,9 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useAuthStore } from "@/lib/store";
-import { Car, Clock, Calendar, CreditCard, CheckCircle, Play, ChevronRight, MapPin, Flag } from "lucide-react";
+import { Car, Clock, Calendar, CreditCard, CheckCircle, Play, ChevronRight, MapPin, Flag, Camera, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { PhotoUploadZone, type TripPhoto } from "@/components/trip/PhotoUploadZone";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface Reservation {
   id: string;
@@ -40,6 +42,9 @@ const tripStatusLabels: Record<string, { label: string; color: string }> = {
   canceled: { label: "Отменена",   color: "text-red-500 border-red-200" },
 };
 
+// 4 required angles for finishing
+const REQUIRED_ANGLES = ["FRONT", "REAR", "LEFT", "RIGHT"];
+
 function TripsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -50,6 +55,19 @@ function TripsPageContent() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Inline notification
+  const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
+  const showToast = (msg: string, type: "ok" | "err" = "ok") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Photo dialogs
+  const [startPhotoDialog, setStartPhotoDialog] = useState<{ tripId: string } | null>(null);
+  const [endPhotoDialog, setEndPhotoDialog] = useState<{ tripId: string } | null>(null);
+  const [startPhotos, setStartPhotos] = useState<TripPhoto[]>([]);
+  const [endPhotos, setEndPhotos] = useState<TripPhoto[]>([]);
 
   // Finish trip map dialog
   const [finishDialog, setFinishDialog] = useState<{ tripId: string } | null>(null);
@@ -84,6 +102,28 @@ function TripsPageContent() {
   useEffect(() => {
     if (isAuthenticated) load();
   }, [isAuthenticated, load]);
+
+  const fetchPhotos = async (tripId: string, phase: "START" | "END") => {
+    const headers: Record<string, string> = tokenRef.current ? { Authorization: `Bearer ${tokenRef.current}` } : {};
+    const res = await fetch(`/api/trips/${tripId}/photos?phase=${phase}`, { credentials: "include", headers });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.photos) ? (data.photos as TripPhoto[]) : [];
+  };
+
+  const openStartDialog = async (tripId: string) => {
+    const photos = await fetchPhotos(tripId, "START");
+    setStartPhotos(photos);
+    setStartPhotoDialog({ tripId });
+  };
+
+  const openEndDialog = async (tripId: string) => {
+    const photos = await fetchPhotos(tripId, "END");
+    setEndPhotos(photos);
+    setEndPhotoDialog({ tripId });
+  };
+
+  const endRequiredDone = REQUIRED_ANGLES.every((a) => endPhotos.some((p) => p.angle === a));
 
   const handleCancel = async (id: string) => {
     setActionLoading(id + "-cancel");
@@ -147,7 +187,6 @@ function TripsPageContent() {
       if ((window as any).ymaps?.ready) {
         (window as any).ymaps.ready(doInit);
       } else {
-        // Script not loaded yet — poll, track interval for cleanup
         pollInterval = setInterval(() => {
           if ((window as any).ymaps?.ready) {
             if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
@@ -157,7 +196,6 @@ function TripsPageContent() {
       }
     };
 
-    // Wait for Dialog to mount DOM before initializing
     const timer = setTimeout(() => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -195,6 +233,7 @@ function TripsPageContent() {
       if (res.ok) {
         setFinishDialog(null);
         setEndCoords(null);
+        setEndPhotoDialog(null);
         await load();
         setTab("history");
       }
@@ -245,6 +284,27 @@ function TripsPageContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Inline toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-5 py-3 rounded-2xl shadow-xl text-sm font-medium ${
+              toast.type === "ok"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {toast.type === "ok"
+              ? <CheckCircle className="h-4 w-4 flex-shrink-0" />
+              : <AlertCircle className="h-4 w-4 flex-shrink-0" />}
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-4xl mx-auto">
         {booked && (
           <Card className="mb-6 border-green-200 bg-green-50">
@@ -360,14 +420,25 @@ function TripsPageContent() {
                           </div>
                           <Badge className="bg-blue-500">В поездке</Badge>
                         </div>
-                        <Button
-                          variant="outline"
-                          className="border-red-300 text-red-600 hover:bg-red-50 gap-2"
-                          onClick={() => setFinishDialog({ tripId: t.id })}
-                        >
-                          <Flag className="h-4 w-4" />
-                          Завершить поездку
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-[#7C3AED]/30 text-[#7C3AED] hover:bg-[#7C3AED]/5 gap-1.5"
+                            onClick={() => openStartDialog(t.id)}
+                          >
+                            <Camera className="h-4 w-4" />
+                            Фото при получении
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="border-red-300 text-red-600 hover:bg-red-50 gap-2"
+                            onClick={() => openEndDialog(t.id)}
+                          >
+                            <Flag className="h-4 w-4" />
+                            Завершить поездку
+                          </Button>
+                        </div>
                       </CardContent>
                     </div>
                   </Card>
@@ -434,13 +505,93 @@ function TripsPageContent() {
         </Tabs>
       </div>
 
-      {/* Yandex Maps script */}
       <Script
         src="https://api-maps.yandex.ru/2.1/?apikey=3c34dc81-b06e-4a4b-b07b-12d9405bf147&lang=ru_RU"
         strategy="afterInteractive"
       />
 
-      {/* Finish trip dialog with map */}
+      {/* Start photos dialog */}
+      <Dialog open={!!startPhotoDialog} onOpenChange={(open) => !open && setStartPhotoDialog(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-[#7C3AED]" />
+              Фото при получении авто
+            </DialogTitle>
+            <DialogDescription>
+              Загрузи фото со всех сторон — это защитит тебя от спорных претензий
+            </DialogDescription>
+          </DialogHeader>
+          {startPhotoDialog && (
+            <PhotoUploadZone
+              phase="START"
+              tripId={startPhotoDialog.tripId}
+              existingPhotos={startPhotos}
+              onUploaded={(photo) => {
+                setStartPhotos((prev) => [...prev.filter((p) => p.angle !== photo.angle), photo]);
+                showToast("Фото загружено");
+              }}
+              onDeleted={(id) => setStartPhotos((prev) => prev.filter((p) => p.id !== id))}
+              onError={(msg) => showToast(msg, "err")}
+            />
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStartPhotoDialog(null)}>Закрыть</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* End photos dialog (step 1) */}
+      <Dialog
+        open={!!endPhotoDialog && !finishDialog}
+        onOpenChange={(open) => { if (!open) setEndPhotoDialog(null); }}
+      >
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5 text-red-500" />
+              Завершение поездки — Шаг 1 из 2
+            </DialogTitle>
+            <DialogDescription>
+              Загрузи минимум 4 фото (перед, зад, левый, правый бок) перед завершением
+            </DialogDescription>
+          </DialogHeader>
+          {endPhotoDialog && (
+            <PhotoUploadZone
+              phase="END"
+              tripId={endPhotoDialog.tripId}
+              existingPhotos={endPhotos}
+              onUploaded={(photo) => {
+                setEndPhotos((prev) => [...prev.filter((p) => p.angle !== photo.angle), photo]);
+                showToast("Фото загружено");
+              }}
+              onDeleted={(id) => setEndPhotos((prev) => prev.filter((p) => p.id !== id))}
+              onError={(msg) => showToast(msg, "err")}
+            />
+          )}
+          {!endRequiredDone && (
+            <p className="text-xs text-amber-600 flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              Загрузи обязательные ракурсы: перед, зад, лево, право
+            </p>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEndPhotoDialog(null)}>Отмена</Button>
+            <Button
+              className="lavender-gradient text-white gap-2"
+              disabled={!endRequiredDone}
+              onClick={() => {
+                if (endPhotoDialog) setFinishDialog({ tripId: endPhotoDialog.tripId });
+              }}
+            >
+              <MapPin className="h-4 w-4" />
+              Далее — выбрать место
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Finish trip dialog with map (step 2) */}
       <Dialog
         open={!!finishDialog}
         onOpenChange={(open) => {
@@ -454,7 +605,7 @@ function TripsPageContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Flag className="h-5 w-5 text-red-500" />
-              Завершение поездки
+              Завершение поездки — Шаг 2 из 2
             </DialogTitle>
             <DialogDescription>
               Нажмите на карту или перетащите маркер, чтобы указать место парковки
@@ -476,7 +627,7 @@ function TripsPageContent() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setFinishDialog(null); setEndCoords(null); }}>
-              Отмена
+              Назад
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white gap-2"

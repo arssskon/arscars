@@ -5,10 +5,14 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
-import { ArrowLeft, StopCircle } from "lucide-react";
+import { ArrowLeft, StopCircle, Camera, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/admin/Toast";
+import { PhotoGalleryViewer } from "@/components/trip/PhotoGalleryViewer";
+import type { TripPhoto } from "@/components/trip/PhotoUploadZone";
 
 interface Payment {
   id: string;
@@ -30,6 +34,10 @@ interface TripDetail {
   startedAt: string;
   finishedAt?: string;
   totalAmountCents?: number;
+  damageClaimedAt?: string | null;
+  damageNote?: string | null;
+  startPhotosConfirmedAt?: string | null;
+  endPhotosConfirmedAt?: string | null;
   user?: { id: string; fullName: string; email?: string };
   vehicle?: { id: string; brand: string; model: string; plateNumber: string };
   tariff?: { name: string };
@@ -71,6 +79,10 @@ export default function TripDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [forceLoading, setForceLoading] = useState(false);
 
+  const [startPhotos, setStartPhotos] = useState<TripPhoto[]>([]);
+  const [endPhotos, setEndPhotos] = useState<TripPhoto[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+
   useEffect(() => {
     fetch(`/api/admin/trips/${id}`, { credentials: "include" })
       .then((r) => r.json())
@@ -78,6 +90,22 @@ export default function TripDetailPage() {
       .catch(() => toastError("Ошибка загрузки поездки"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const loadPhotos = async () => {
+    setPhotosLoading(true);
+    try {
+      const [startRes, endRes] = await Promise.all([
+        fetch(`/api/trips/${id}/photos?phase=START`, { credentials: "include" }).then((r) => r.json()),
+        fetch(`/api/trips/${id}/photos?phase=END`, { credentials: "include" }).then((r) => r.json()),
+      ]);
+      setStartPhotos(Array.isArray(startRes.photos) ? startRes.photos : []);
+      setEndPhotos(Array.isArray(endRes.photos) ? endRes.photos : []);
+    } catch {
+      toastError("Ошибка загрузки фото");
+    } finally {
+      setPhotosLoading(false);
+    }
+  };
 
   const handleForceFinish = async () => {
     setForceLoading(true);
@@ -145,158 +173,216 @@ export default function TripDetailPage() {
         )}
       </div>
 
-      {/* Main info */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Информация о поездке</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Статус</span>
-              <StatusBadge status={trip.status} type="trip" />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Тариф</span>
-              <span className="text-sm font-medium">{trip.tariff?.name || "—"}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Начало</span>
-              <span className="text-sm">{formatDate(trip.startedAt)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Конец</span>
-              <span className="text-sm">{trip.finishedAt ? formatDate(trip.finishedAt) : "В процессе"}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-500">Длительность</span>
-              <span className="text-sm">{formatDuration(trip.startedAt, trip.finishedAt)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-sm text-slate-500">Итоговая сумма</span>
-              <span className="text-base font-bold">{formatAmount(trip.totalAmountCents)}</span>
-            </div>
-            {trip.reservation && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">Бронирование</span>
-                <span className="text-sm font-mono">{trip.reservation.code}</span>
-              </div>
+      {/* Damage claim banner */}
+      {trip.damageClaimedAt && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200">
+          <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">Подана претензия о повреждении</p>
+            {trip.damageNote && (
+              <p className="text-sm text-red-600 mt-0.5">{trip.damageNote}</p>
             )}
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          {/* User info */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Пользователь</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="font-medium">{trip.user?.fullName || "—"}</p>
-              {trip.user?.email && (
-                <p className="text-sm text-slate-500">{trip.user.email}</p>
-              )}
-              {trip.user?.id && (
-                <Link href={`/admin/users/${trip.user.id}`}>
-                  <Button variant="link" className="h-auto p-0 text-violet-600">
-                    Перейти к профилю
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Vehicle info */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Автомобиль</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="font-medium">
-                {trip.vehicle ? `${trip.vehicle.brand} ${trip.vehicle.model}` : "—"}
-              </p>
-              {trip.vehicle?.plateNumber && (
-                <p className="text-sm font-mono text-slate-500">{trip.vehicle.plateNumber}</p>
-              )}
-              {trip.vehicle?.id && (
-                <Link href={`/admin/vehicles/${trip.vehicle.id}`}>
-                  <Button variant="link" className="h-auto p-0 text-violet-600">
-                    Перейти к автомобилю
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
+            <p className="text-xs text-red-400 mt-1">{formatDate(trip.damageClaimedAt)}</p>
+          </div>
         </div>
-      </div>
-
-      {/* Payments */}
-      {trip.payments && trip.payments.length > 0 && (
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Платежи</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-slate-50">
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">ID</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">Сумма</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">Статус</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">Дата</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trip.payments.map((p) => (
-                    <tr key={p.id} className="border-b last:border-0">
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.id.slice(0, 12)}...</td>
-                      <td className="px-4 py-3 font-medium">{formatAmount(p.amountCents)}</td>
-                      <td className="px-4 py-3">{p.status}</td>
-                      <td className="px-4 py-3 text-slate-500">{formatDate(p.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
       )}
 
-      {/* Incidents */}
-      {trip.incidents && trip.incidents.length > 0 && (
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Инциденты</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-slate-50">
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">Тип</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">Статус</th>
-                    <th className="text-left px-4 py-3 font-medium text-slate-500">Дата</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trip.incidents.map((inc) => (
-                    <tr key={inc.id} className="border-b last:border-0">
-                      <td className="px-4 py-3">
-                        <StatusBadge status={inc.type} type="incidentType" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={inc.status} type="incidentStatus" />
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">{formatDate(inc.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <Tabs defaultValue="info">
+        <TabsList>
+          <TabsTrigger value="info">Информация</TabsTrigger>
+          <TabsTrigger value="photos" onClick={loadPhotos} className="gap-1.5">
+            <Camera className="h-4 w-4" />
+            Фото
+            {(startPhotos.length > 0 || endPhotos.length > 0) && (
+              <Badge className="h-4 px-1.5 text-[10px]">{startPhotos.length + endPhotos.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Info tab */}
+        <TabsContent value="info" className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Информация о поездке</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Статус</span>
+                  <StatusBadge status={trip.status} type="trip" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Тариф</span>
+                  <span className="text-sm font-medium">{trip.tariff?.name || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Начало</span>
+                  <span className="text-sm">{formatDate(trip.startedAt)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Конец</span>
+                  <span className="text-sm">{trip.finishedAt ? formatDate(trip.finishedAt) : "В процессе"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Длительность</span>
+                  <span className="text-sm">{formatDuration(trip.startedAt, trip.finishedAt)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-3">
+                  <span className="text-sm text-slate-500">Итоговая сумма</span>
+                  <span className="text-base font-bold">{formatAmount(trip.totalAmountCents)}</span>
+                </div>
+                {trip.reservation && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500">Бронирование</span>
+                    <span className="text-sm font-mono">{trip.reservation.code}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Пользователь</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="font-medium">{trip.user?.fullName || "—"}</p>
+                  {trip.user?.email && (
+                    <p className="text-sm text-slate-500">{trip.user.email}</p>
+                  )}
+                  {trip.user?.id && (
+                    <Link href={`/admin/users/${trip.user.id}`}>
+                      <Button variant="link" className="h-auto p-0 text-violet-600">
+                        Перейти к профилю
+                      </Button>
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Автомобиль</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="font-medium">
+                    {trip.vehicle ? `${trip.vehicle.brand} ${trip.vehicle.model}` : "—"}
+                  </p>
+                  {trip.vehicle?.plateNumber && (
+                    <p className="text-sm font-mono text-slate-500">{trip.vehicle.plateNumber}</p>
+                  )}
+                  {trip.vehicle?.id && (
+                    <Link href={`/admin/vehicles/${trip.vehicle.id}`}>
+                      <Button variant="link" className="h-auto p-0 text-violet-600">
+                        Перейти к автомобилю
+                      </Button>
+                    </Link>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+
+          {trip.payments && trip.payments.length > 0 && (
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Платежи</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-slate-50">
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">ID</th>
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">Сумма</th>
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">Статус</th>
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">Дата</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trip.payments.map((p) => (
+                        <tr key={p.id} className="border-b last:border-0">
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500">{p.id.slice(0, 12)}...</td>
+                          <td className="px-4 py-3 font-medium">{formatAmount(p.amountCents)}</td>
+                          <td className="px-4 py-3">{p.status}</td>
+                          <td className="px-4 py-3 text-slate-500">{formatDate(p.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {trip.incidents && trip.incidents.length > 0 && (
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Инциденты</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-slate-50">
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">Тип</th>
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">Статус</th>
+                        <th className="text-left px-4 py-3 font-medium text-slate-500">Дата</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trip.incidents.map((inc) => (
+                        <tr key={inc.id} className="border-b last:border-0">
+                          <td className="px-4 py-3">
+                            <StatusBadge status={inc.type} type="incidentType" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={inc.status} type="incidentStatus" />
+                          </td>
+                          <td className="px-4 py-3 text-slate-500">{formatDate(inc.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Photos tab */}
+        <TabsContent value="photos" className="mt-6">
+          {photosLoading ? (
+            <div className="space-y-4">
+              <div className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
+              <div className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <PhotoGalleryViewer photos={startPhotos} phase="START" />
+                {trip.startPhotosConfirmedAt ? (
+                  <p className="text-xs text-green-600 pl-1">
+                    Подтверждено {formatDate(trip.startPhotosConfirmedAt)}
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600 pl-1">Ожидает подтверждения владельца</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <PhotoGalleryViewer photos={endPhotos} phase="END" />
+                {trip.endPhotosConfirmedAt ? (
+                  <p className="text-xs text-green-600 pl-1">
+                    Подтверждено {formatDate(trip.endPhotosConfirmedAt)}
+                  </p>
+                ) : endPhotos.length > 0 ? (
+                  <p className="text-xs text-amber-600 pl-1">Ожидает подтверждения владельца</p>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <ConfirmDialog
         open={confirmOpen}
