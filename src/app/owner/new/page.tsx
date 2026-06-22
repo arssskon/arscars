@@ -9,6 +9,7 @@ import { MapPicker } from "@/components/ui/MapPicker";
 import { useAuthStore } from "@/lib/store";
 import { useToast } from "@/components/admin/Toast";
 import { Camera, Loader2, Plus, Trash2, X } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 
 const CLASSES = ["Эконом", "Комфорт", "Бизнес", "Премиум", "Элит"];
 const TRANSMISSIONS = [{ value: "AT", label: "Автомат" }, { value: "MT", label: "Механика" }];
@@ -321,8 +322,8 @@ export default function OwnerNewPage() {
                     </div>
                     <div>
                       <Label>Ваш номер телефона *</Label>
-                      <input className={inputCls} type="tel" placeholder="+7 (999) 000-00-00"
-                        value={form.ownerPhone} onChange={(e) => set("ownerPhone", e.target.value)} />
+                      <input className={inputCls} type="tel" placeholder="+7 (999) 123-45-67"
+                        value={form.ownerPhone} onChange={(e) => set("ownerPhone", formatPhone(e.target.value))} />
                     </div>
                     <div className="pt-2 flex gap-3 justify-between">
                       <GlassButton variant="ghost" onClick={() => go(1)}>← Назад</GlassButton>

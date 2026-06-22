@@ -9,6 +9,7 @@ import { MapPicker } from "@/components/ui/MapPicker";
 import { useAuthStore } from "@/lib/store";
 import { useToast } from "@/components/admin/Toast";
 import { Plus, X } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 
 const CLASSES = ["Эконом", "Комфорт", "Бизнес", "Премиум", "Элит"];
 const TRANSMISSIONS = [{ value: "AT", label: "Автомат" }, { value: "MT", label: "Механика" }];
@@ -193,7 +194,7 @@ export default function EditListingPage({ params }: { params: Promise<{ id: stri
                       <Label>Описание</Label>
                       <textarea className={`${inputCls} resize-none`} rows={3} maxLength={500} value={form.description} onChange={(e) => set("description", e.target.value)} />
                     </div>
-                    <div><Label>Телефон *</Label><input className={inputCls} type="tel" value={form.ownerPhone} onChange={(e) => set("ownerPhone", e.target.value)} /></div>
+                    <div><Label>Телефон *</Label><input className={inputCls} type="tel" placeholder="+7 (999) 123-45-67" value={form.ownerPhone} onChange={(e) => set("ownerPhone", formatPhone(e.target.value))} /></div>
                     <div className="pt-2 flex gap-3 justify-between">
                       <GlassButton variant="ghost" onClick={() => go(1)}>← Назад</GlassButton>
                       <GlassButton variant="primary" onClick={() => go(3)}>Далее →</GlassButton>

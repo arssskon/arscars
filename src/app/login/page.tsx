@@ -11,6 +11,7 @@ import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useAuthStore } from "@/lib/store";
 import { Eye, EyeOff, Mail, Lock, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatPhone } from "@/lib/phone";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -109,7 +110,7 @@ export default function LoginPage() {
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-lavender-400" />
                 <Input
                   id="phone" type="tel" placeholder="+7 (999) 123-45-67"
-                  value={phone} onChange={(e) => setPhone(e.target.value)}
+                  value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
                   className="pl-10 bg-white/50 backdrop-blur border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400/40 focus:border-lavender-400"
                   required
                 />

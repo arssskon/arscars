@@ -10,6 +10,7 @@ import { GlassPanel } from "@/components/ui/glass/GlassPanel";
 import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { useAuthStore } from "@/lib/store";
 import { Eye, EyeOff, Mail, Lock, User, Phone, Calendar, Check } from "lucide-react";
+import { formatPhone } from "@/lib/phone";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -103,7 +104,7 @@ export default function RegisterPage() {
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-lavender-400" />
               <Input
                 name="phone" type="tel" placeholder="+7 (999) 123-45-67"
-                value={form.phone} onChange={ch}
+                value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: formatPhone(e.target.value) }))}
                 className={`pl-10 ${inputCls}`}
               />
             </div>

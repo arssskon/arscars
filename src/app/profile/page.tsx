@@ -14,6 +14,7 @@ import { useAuthStore } from "@/lib/store";
 import { User, Mail, Phone, MapPin, Calendar, Shield, FileText, CreditCard, CheckCircle, AlertCircle, Clock, ChevronRight, Save, PartyPopper } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { formatPhone } from "@/lib/phone";
 
 const verificationStatus: Record<string, { label: string; color: string; icon: typeof AlertCircle }> = {
   draft:    { label: "Не подтверждён", color: "bg-muted text-muted-foreground",  icon: AlertCircle },
@@ -195,7 +196,7 @@ function ProfilePageContent() {
                 <div className="space-y-2">
                   <Label>Телефон</Label>
                   {editing
-                    ? <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="pl-10" /></div>
+                    ? <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input type="tel" placeholder="+7 (999) 123-45-67" value={form.phone} onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })} className="pl-10" /></div>
                     : <p className="flex items-center gap-2 p-2 rounded bg-muted/50"><Phone className="h-5 w-5 text-muted-foreground" />{profile?.phone || "Не указан"}</p>
                   }
                 </div>
