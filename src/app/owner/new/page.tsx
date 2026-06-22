@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlassPanel } from "@/components/ui/glass/GlassPanel";
@@ -8,7 +8,7 @@ import { GlassButton } from "@/components/ui/glass/GlassButton";
 import { MapPicker } from "@/components/ui/MapPicker";
 import { useAuthStore } from "@/lib/store";
 import { useToast } from "@/components/admin/Toast";
-import { Plus, X } from "lucide-react";
+import { Camera, Loader2, Plus, Trash2, X } from "lucide-react";
 
 const CLASSES = ["Эконом", "Комфорт", "Бизнес", "Премиум", "Элит"];
 const TRANSMISSIONS = [{ value: "AT", label: "Автомат" }, { value: "MT", label: "Механика" }];
@@ -49,13 +49,16 @@ const slideVariants = {
 
 export default function OwnerNewPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, token } = useAuthStore();
   const { success, error: toastError } = useToast();
 
   const [step, setStep] = useState(1);
   const [dir, setDir] = useState(1);
   const [form, setForm] = useState<FormData>(initial);
   const [loading, setLoading] = useState(false);
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingSlot = useRef<number | null>(null);
 
   if (!isAuthenticated) {
     if (typeof window !== "undefined") router.replace("/login?redirect=/owner/new");
@@ -65,18 +68,46 @@ export default function OwnerNewPage() {
   const set = (field: keyof FormData, val: string) =>
     setForm((p) => ({ ...p, [field]: val }));
 
-  const setPhoto = (i: number, val: string) =>
-    setForm((p) => {
-      const urls = [...p.photoUrls];
-      urls[i] = val;
-      return { ...p, photoUrls: urls };
-    });
-
   const addPhoto = () =>
     setForm((p) => ({ ...p, photoUrls: [...p.photoUrls, ""] }));
 
   const removePhoto = (i: number) =>
     setForm((p) => ({ ...p, photoUrls: p.photoUrls.filter((_, idx) => idx !== i) }));
+
+  const triggerFileUpload = (slotIdx: number) => {
+    pendingSlot.current = slotIdx;
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const idx = pendingSlot.current;
+    if (!file || idx === null) return;
+    e.target.value = "";
+
+    if (!file.type.startsWith("image/")) { toastError("Только изображения (jpg, png, webp)"); return; }
+    if (file.size > 10 * 1024 * 1024) { toastError("Файл слишком большой (макс. 10 МБ)"); return; }
+
+    setUploadingIdx(idx);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch("/api/upload", { method: "POST", credentials: "include", headers, body: fd });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); toastError(d.error ?? "Ошибка загрузки"); return; }
+      const { url } = await res.json();
+      setForm((p) => {
+        const urls = [...p.photoUrls];
+        urls[idx] = url;
+        return { ...p, photoUrls: urls };
+      });
+    } catch {
+      toastError("Ошибка сети при загрузке");
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
 
   const go = (next: number) => {
     setDir(next > step ? 1 : -1);
@@ -224,27 +255,55 @@ export default function OwnerNewPage() {
                   <>
                     <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Фото и описание</h2>
                     <div>
-                      <Label>Фото автомобиля (URL) *</Label>
-                      <div className="space-y-2">
+                      <Label>Фото автомобиля *</Label>
+                      <div className="grid grid-cols-3 gap-2 mt-1">
                         {form.photoUrls.map((url, i) => (
-                          <div key={i} className="flex gap-2">
-                            <input className={inputCls} placeholder="https://..." value={url}
-                              onChange={(e) => setPhoto(i, e.target.value)} />
-                            {i > 0 && (
-                              <button onClick={() => removePhoto(i)}
-                                className="text-white/40 hover:text-red-400 transition flex-shrink-0">
-                                <X className="h-4 w-4" />
+                          <div key={i} className="relative aspect-[4/3]">
+                            {url ? (
+                              <div className="relative w-full h-full rounded-xl overflow-hidden group">
+                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removePhoto(i)}
+                                  className="absolute top-1 right-1 h-6 w-6 rounded-full bg-red-500 items-center justify-center shadow hidden group-hover:flex"
+                                >
+                                  <Trash2 className="h-3 w-3 text-white" />
+                                </button>
+                              </div>
+                            ) : uploadingIdx === i ? (
+                              <div className="w-full h-full border-2 border-dashed border-lavender-300 rounded-xl flex items-center justify-center bg-lavender-50/50">
+                                <Loader2 className="h-5 w-5 text-lavender-400 animate-spin" />
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => triggerFileUpload(i)}
+                                className="w-full h-full border-2 border-dashed border-lavender-300 rounded-xl flex flex-col items-center justify-center gap-1 hover:bg-lavender-50/50 hover:border-lavender-400 transition group"
+                              >
+                                <Camera className="h-5 w-5 text-lavender-400 group-hover:text-lavender-600" strokeWidth={1.5} />
+                                <span className="text-[10px] text-lavender-400 group-hover:text-lavender-600">Загрузить</span>
                               </button>
                             )}
                           </div>
                         ))}
                         {form.photoUrls.length < 6 && (
-                          <button onClick={addPhoto}
-                            className="flex items-center gap-1 text-sm text-lavender-600 hover:text-lavender-800 transition">
-                            <Plus className="h-4 w-4" /> Добавить фото
+                          <button
+                            type="button"
+                            onClick={addPhoto}
+                            className="aspect-[4/3] border-2 border-dashed border-lavender-200 rounded-xl flex flex-col items-center justify-center gap-1 hover:border-lavender-300 hover:bg-lavender-50/30 transition"
+                          >
+                            <Plus className="h-4 w-4 text-lavender-300" />
+                            <span className="text-[10px] text-lavender-300">Ещё фото</span>
                           </button>
                         )}
                       </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
                     </div>
                     <div>
                       <Label>Описание (необязательно)</Label>
@@ -268,8 +327,8 @@ export default function OwnerNewPage() {
                     <div className="pt-2 flex gap-3 justify-between">
                       <GlassButton variant="ghost" onClick={() => go(1)}>← Назад</GlassButton>
                       <GlassButton variant="primary" onClick={() => {
-                        if (!form.photoUrls[0] || !form.ownerPhone) {
-                          toastError("Добавьте фото и телефон"); return;
+                        if (!form.photoUrls.some(Boolean) || !form.ownerPhone) {
+                          toastError("Загрузите хотя бы одно фото и укажите телефон"); return;
                         }
                         go(3);
                       }}>Далее →</GlassButton>
